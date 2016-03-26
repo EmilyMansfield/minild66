@@ -4,6 +4,8 @@
 
 #include "entity_manager.hpp"
 #include "entity.hpp"
+#include "tileset.hpp"
+#include "game_map.hpp"
 
 EntityManager::EntityManager() {}
 EntityManager::~EntityManager()
@@ -34,3 +36,12 @@ T* EntityManager::getEntity(const std::string& id) const
 {
     return dynamic_cast<T*>(mData.at(id));
 }
+
+template<> std::string entityToString<GameMap>() { return "gamemap"; }
+template<> std::string entityToString<Tileset>() { return "tileset"; }
+
+template void EntityManager::load<GameMap>(const std::string&);
+template void EntityManager::load<Tileset>(const std::string&);
+
+template GameMap* EntityManager::getEntity<GameMap>(const std::string&) const;
+template Tileset* EntityManager::getEntity<Tileset>(const std::string&) const;
