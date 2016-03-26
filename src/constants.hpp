@@ -7,6 +7,7 @@ namespace ld
 extern const unsigned int width;
 extern const unsigned int height;
 extern const char* title;
+extern const float cameraPanSpeed;
 }
 
 #endif /* CONSTANTS_HPP */

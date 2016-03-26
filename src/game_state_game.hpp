@@ -15,7 +15,7 @@ class GameStateGame : public GameState
 private:
     GameMap* map;
     sf::View view;
-
+    float zoomLevel;
 public:
     GameStateGame(std::shared_ptr<GameState>& state,
             std::shared_ptr<GameState>& prevState,
@@ -23,7 +23,8 @@ public:
         GameState(state, prevState, mgr)
     {
         map = mgr->getEntity<GameMap>("gamemap_5v5");
-        view = sf::View(sf::FloatRect(0, 0, ld::width, ld::height));
+        zoomLevel = 2.0f;
+        view = sf::View(sf::FloatRect(0, 0, ld::width / zoomLevel, ld::height / zoomLevel));
         view.setCenter(sf::Vector2f(
                     map->tilemap.ts * map->tilemap.w / 2.0f,
                     map->tilemap.ts * map->tilemap.h / 2.0f));
