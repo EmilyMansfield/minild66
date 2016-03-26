@@ -1,12 +1,24 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
+#include <memory>
 
 #include "constants.hpp"
 #include "game_state.hpp"
 #include "game_state_title.hpp"
+#include "game_state_game.hpp"
+#include "entity_manager.hpp"
+
+class Tileset;
+class GameMap;
 
 int main()
 {
+    EntityManager entityManager;
+
+    // Load entities
+    entityManager.load<Tileset>("tilesets.json");
+    entityManager.load<GameMap>("game_map.json");
+
     // Create the window
     sf::RenderWindow window(sf::VideoMode(ld::width, ld::height), ld::title,
             sf::Style::Titlebar | sf::Style::Close);
@@ -26,7 +38,8 @@ int main()
     std::shared_ptr<GameState> state;
 
     // Load initial game state
-    state.reset(new GameStateTitle(state, state));
+    //state.reset(new GameStateTitle(state, state, &entityManager));
+    state.reset(new GameStateGame(state, state, &entityManager));
 
     // Frame time
     sf::Clock clock;

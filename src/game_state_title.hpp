@@ -6,15 +6,17 @@
 #include <SFML/Graphics.hpp>
 
 #include "game_state.hpp"
+#include "entity_manager.hpp"
+#include "game_state_game.hpp"
 
 class GameStateTitle : public GameState
 {
 public:
     GameStateTitle(std::shared_ptr<GameState>& state,
-            std::shared_ptr<GameState>& prevState) :
-        GameState(state, prevState)
-    {
-    }
+            std::shared_ptr<GameState>& prevState,
+            EntityManager* mgr) :
+        GameState(state, prevState, mgr)
+    {}
 
     virtual void handleEvent(const sf::Event& event);
     virtual void handleInput(float dt);

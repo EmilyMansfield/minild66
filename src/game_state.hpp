@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "entity_manager.hpp"
+
 // I should really just make a library with this definition,
 // almost everything I write seems to use it
 class GameState : public sf::Drawable
@@ -13,6 +15,7 @@ class GameState : public sf::Drawable
 protected:
     std::shared_ptr<GameState>& mState;
     std::shared_ptr<GameState>& mPrevState;
+    EntityManager* mMgr;
 
 public:
     virtual void handleEvent(const sf::Event& event) = 0;
@@ -20,9 +23,11 @@ public:
     virtual void update(float dt) = 0;
 
     GameState(std::shared_ptr<GameState>& state,
-            std::shared_ptr<GameState>& prevState) :
+            std::shared_ptr<GameState>& prevState,
+            EntityManager* mgr) :
         mState(state),
-        mPrevState(prevState)
+        mPrevState(prevState),
+        mMgr(mgr)
     {
     }
 
