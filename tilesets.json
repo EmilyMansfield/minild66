@@ -1,0 +1,14 @@
+{
+    "tileset_dungeon": {
+        "filename": "assets/dungeon.png",
+        "tilesize": 16
+    },
+
+    "tileset_characters": {
+        "filename": "assets/characters.png",
+        "tilesize": 16,
+        "animations": [
+            { "name": "player_idle", "x": 0, "y": 0, "len": 1 }
+        ]
+    }
+}
