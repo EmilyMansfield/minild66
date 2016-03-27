@@ -35,8 +35,8 @@ public:
                     map->tilemap.ts * map->tilemap.h / 2.0f));
         playerCharacter = *mgr->getEntity<Character>("character_fighter");
         playerCharacter.setPos(sf::Vector2f(
-                    map->tilemap.ts * map->tilemap.w / 2.0f,
-                    map->tilemap.ts * map->tilemap.h / 2.0f));
+                    map->tilemap.ts * map->tilemap.w / 4.0f,
+                    map->tilemap.ts * map->tilemap.h / 4.0f));
     }
 
     virtual void handleEvent(const sf::Event& event,
