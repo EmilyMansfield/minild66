@@ -18,8 +18,10 @@ public:
         GameState(state, prevState, mgr)
     {}
 
-    virtual void handleEvent(const sf::Event& event);
-    virtual void handleInput(float dt);
+    virtual void handleEvent(const sf::Event& event,
+            const sf::RenderWindow& window);
+    virtual void handleInput(float dt,
+            const sf::RenderWindow& window);
     virtual void update(float dt);
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
     {

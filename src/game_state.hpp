@@ -18,8 +18,10 @@ protected:
     EntityManager* mMgr;
 
 public:
-    virtual void handleEvent(const sf::Event& event) = 0;
-    virtual void handleInput(float dt) = 0;
+    virtual void handleEvent(const sf::Event& event,
+            const sf::RenderWindow& window) = 0;
+    virtual void handleInput(float dt,
+            const sf::RenderWindow& window) = 0;
     virtual void update(float dt) = 0;
 
     GameState(std::shared_ptr<GameState>& state,

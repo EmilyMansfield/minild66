@@ -57,13 +57,13 @@ int main()
             {
                 window.close();
             }
-            if(state != nullptr) state->handleEvent(event);
+            if(state != nullptr) state->handleEvent(event, window);
         }
 
         if(state != nullptr)
         {
             // Update window
-            state->handleInput(dt);
+            state->handleInput(dt, window);
             state->update(dt);
             // Draw window
             window.clear(sf::Color::Black);
