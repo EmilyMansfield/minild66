@@ -6,7 +6,7 @@
 
 namespace vecmath
 {
-const float pi = 3.1415926535897;
+const double pi = 3.1415926535897;
 
 template<typename T>
 T norm(const sf::Vector2<T>& a)
@@ -18,6 +18,16 @@ template<typename T>
 T dot(const sf::Vector2<T>& a, const sf::Vector2<T>& b)
 {
     return a.x*b.x + a.y*b.y;
+}
+
+// Calculate the angle of a to the horizontal, in the range
+// [0, 2pi]
+template<typename T>
+T angle(const sf::Vector2<T>& a)
+{
+    T theta = std::atan2(a.y, a.x);
+    if(theta < 0) theta += 2*pi;
+    return theta;
 }
 
 template<typename T>
@@ -35,7 +45,7 @@ bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
     T mu1 = vecmath::dot((p0 - q0), dpt) / vecmath::dot(dpt, dq);
     T mu2 = vecmath::dot((q0 - p0), dqt) / vecmath::dot(dqt, dp);
     // mu is parameter for Q
-    if(0 <= mu1 && 0 <= mu2 && (unboundAbove || (mu1 <= 1 && mu2 <= 1)))
+    if(0 <= mu1 && 0 <= mu2 && (unboundAbove || mu1 <= 1) && mu2 <= 1)
     {
         intersection->x = q0.x + mu1 * (q1.x-q0.x);
         intersection->y = q0.y + mu1 * (q1.y-q0.y);
