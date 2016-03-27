@@ -23,7 +23,7 @@ T dot(const sf::Vector2<T>& a, const sf::Vector2<T>& b)
 template<typename T>
 bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
         const sf::Vector2<T>& q0, const sf::Vector2<T>& q1,
-        sf::Vector2<T>* intersection)
+        sf::Vector2<T>* intersection, bool unboundAbove=false)
 {
     auto dp = p1 - p0;
     auto dpt = sf::Vector2<T>(-dp.y, dp.x);
@@ -35,7 +35,7 @@ bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
     T mu1 = vecmath::dot((p0 - q0), dpt) / vecmath::dot(dpt, dq);
     T mu2 = vecmath::dot((q0 - p0), dqt) / vecmath::dot(dqt, dp);
     // mu is parameter for Q
-    if(0 <= mu1 && mu1 <= 1 && 0 <= mu2 && mu2 <= 1)
+    if(0 <= mu1 && 0 <= mu2 && (unboundAbove || (mu1 <= 1 && mu2 <= 1)))
     {
         intersection->x = q0.x + mu1 * (q1.x-q0.x);
         intersection->y = q0.y + mu1 * (q1.y-q0.y);
