@@ -4,6 +4,7 @@
 #include "tileset.hpp"
 #include "tilemap.hpp"
 #include "entity_manager.hpp"
+#include "navmesh.hpp"
 
 GameMap::GameMap(const std::string& id, const JsonBox::Value& v,
         EntityManager* mgr) : Entity(id)
@@ -24,5 +25,10 @@ void GameMap::load(const JsonBox::Value& v, EntityManager* mgr)
     {
         JsonBox::Array a = o["tilemap"].getArray();
         tilemap = Tilemap(a, tileset);
+    }
+
+    if(o.find("navmesh") != o.end())
+    {
+        navmesh = Navmesh(o["navmesh"]);
     }
 }

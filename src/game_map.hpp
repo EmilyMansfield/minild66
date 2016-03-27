@@ -3,6 +3,7 @@
 
 #include "tileset.hpp"
 #include "tilemap.hpp"
+#include "navmesh.hpp"
 
 class GameMap : public Entity
 {
@@ -10,6 +11,7 @@ public:
 
     Tileset* tileset;
     Tilemap tilemap;
+    Navmesh navmesh;
 
     GameMap(const std::string& id, const JsonBox::Value& v, EntityManager* mgr);
 

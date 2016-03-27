@@ -4,6 +4,7 @@
 #include <SFML/System.hpp>
 #include <vector>
 #include <cmath>
+#include <JsonBox.h>
 
 #include "graph.hpp"
 #include "vecmath.hpp"
@@ -43,6 +44,46 @@ public:
     Graph<ConvexPolygon> polys;
 
     Navmesh() {}
+    explicit Navmesh(const JsonBox::Value& v)
+    {
+        load(v);
+    }
+
+    void load(const JsonBox::Value& v)
+    {
+        JsonBox::Object o = v.getObject();
+        if(o.find("nodes") != o.end())
+        {
+            JsonBox::Array nodes = o["nodes"].getArray();
+            for(auto node : nodes)
+            {
+                ConvexPolygon poly;
+                JsonBox::Array nodePoints = node.getArray();
+                for(auto point : nodePoints)
+                {
+                    JsonBox::Array components = point.getArray();
+                    // TODO: Array bounds checking
+                    poly.points.push_back(sf::Vector2f(
+                                components[0].tryGetFloat(0.0f),
+                                components[1].tryGetFloat(0.0f)));
+                }
+                polys.add_node(poly);
+            }
+        }
+        if(o.find("edges") != o.end())
+        {
+            JsonBox::Array edges = o["edges"].getArray();
+            for(auto edge : edges)
+            {
+                // TODO: Array bounds checking
+                JsonBox::Array components = edge.getArray();
+                polys.add_edge(
+                        components[0].tryGetInteger(0),
+                        components[1].tryGetInteger(0),
+                        false);
+            }
+        }
+    }
 };
 
 #endif /* NAVMESH_HPP */
