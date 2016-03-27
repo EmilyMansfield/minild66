@@ -84,6 +84,17 @@ bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
         return false;
     }
 }
+
+// This has no mathematical significance, but it's needed for std::set
+template<typename T>
+class vec2_compare
+{
+public:
+    bool operator() (const sf::Vector2<T>& lhs, const sf::Vector2<T>& rhs) const
+    {
+        return (lhs.x < rhs.x || (lhs.x == lhs.x && lhs.y < rhs.y));
+    }
+};
 }
 
 #endif /* VECMATH_HPP */

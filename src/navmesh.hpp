@@ -4,6 +4,7 @@
 #include <SFML/System.hpp>
 #include <vector>
 #include <cmath>
+#include <set>
 #include <JsonBox.h>
 
 #include "graph.hpp"
@@ -212,64 +213,130 @@ public:
             // subtracted region. They must be taken in clockwise order,
             // forming closed loops. This is much easier understood when
             // drawn, so if you're reading this, go draw a diagram.
-            std::vector<ConvexPolygon> regions;
-            ConvexPolygon region;
+            // First make a combined vector containing the intersections
+            // and the node points, orientated anti-clockwise
+            std::set<sf::Vector2f, vecmath::vec2_compare<float>> intSet;
+            std::vector<sf::Vector2f> totalPoints = { node.points[0] };
             float oldTheta = vecmath::angle(node.points[0]-centroid);
-            int intIndex = 0;
-            region.points.push_back(node.points[0]);
-            std::set<int> addedNodeIndices = { 0 };
             for(int j = 1; j < node.points.size(); ++j)
             {
                 auto& p = node.points[j];
-                float theta = vecmath::angle(node.points[j]-centroid);
-                // Hunt for an intersect point with an angle strictly
-                // between the angle of the previous node and the
-                // angle of the next node
-                found = false;
-                for(int k = 0; k < intersections.size(); ++k)
+                float newTheta = vecmath::angle(node.points[j]-centroid);
+                // Look for an intersect point that lies between
+                // oldTheta and newTheta
+                bool found = false;
+                for(auto q : node.points)
                 {
-                    float intTheta = vecmath::angle(intersections[k]-centroid);
-                    if(vecmath::isAngleBetween(intTheta, oldTheta, theta))
+                    float theta = vecmath::angle(q-centroid);
+                    if((oldTheta < theta && theta < newTheta) ||
+                        (oldTheta > vecmath::pi && newTheta < vecmath::pi &&
+                         (theta > oldTheta || theta < newTheta)))
                     {
-                        bool found = true;
-                        // Next point around the convex region is an
-                        // intersection point. Add and remember it.
-                        intIndex = k;
-                        region.points.push_back(intersections[k]);
-                        // Move along the intersection line back to the
-                        // centroid, and add the poly point. The index
-                        // of the poly point which caused the
-                        // intersection is the same as the intersection
-                        // itself. This might be the same point as the
-                        // intersection, if so don't add it
-                        if(vecmath::norm(clippedPoly.points[k]-intersections[k]) > 10e-5)
-                        {
-                            region.points.push_back(clippedPoly.points[k]);
-                        }
-                        // Now move clockwise around the poly and add
-                        // the point before
-                        int prevIndex = (k > 0 ? k-1 : clippedPoly.points.size()-1);
-                        region.points.push_back(clippedPoly.points[prevIndex]);
-                        // Move along this intersection line back to
-                        // the edge of the node, adding that point if
-                        // needed (as before)
-                        if(vecmath::norm(clippedPoly.points[prevIndex]-intersections[prevIndex]) > 10e-5)
-                        {
-                            region.points.push_back(intersections[prevIndex]);
-                        }
-                        // Find the node point with the smallest angle
-                        // greater than the angle of the just added
-                        // intersection, and add it to the list
-                        // TODO
-                        // Change j to point to just after that point
-                        // TODO
+                        // Remember the intersection in a set. Since
+                        // all intersections should be visited, this
+                        // converts the intersection vector to a set
+                        intSet.insert(q);
+                        totalPoints.push_back(q);
+                        found = true;
                     }
                 }
-                // Add the jth point if it hasn't already been added
-                // TODO
-                // if it has, then the region is complete
-                // TODO
+                // If one was found, there might be more so retry
+                // this loop iteration
+                if(found)
+                {
+                    j -= 1;
+                    continue;
+                }
+                // If one wasn't found, point p is the next point
+                else
+                {
+                    totalPoints.push_back(p);
+                }
             }
+            std::vector<ConvexPolygon> regions;
+            ConvexPolygon region;
+            std::set<sf::Vector2f, vecmath::vec2_compare<float>> addedPoints;
+            int intIndex = 0;
+            for(int j = 0; j < totalPoints.size(); j = (j+1) % totalPoints.size())
+            {
+                auto& p = totalPoints[j];
+                // Add the jth point if it hasn't already been added
+                if(addedPoints.count(p) == 0)
+                {
+                    addedPoints.insert(p);
+                    region.points.push_back(p);
+                }
+                // If it has, then the region is complete
+                else
+                {
+                    regions.push_back(region);
+                    // If every point has been visited, then we are
+                    // done
+                    if(addedPoints.size() == totalPoints.size())
+                    {
+                        break;
+                    }
+                    // Otherwise we repeat for a new region, starting
+                    // from the point we remembered earlier
+                    region = ConvexPolygon();
+                    addedPoints.clear();
+                    // We have to add the point now then continue
+                    // so that it is not checked as an intersection
+                    // and closed into the wrong region
+                    addedPoints.insert(totalPoints[intIndex]);
+                    region.points.push_back(totalPoints[intIndex]);
+                    continue;
+                }
+                // If this point is an intersection point, we need to
+                // close the region up
+                if(intSet.count(p) == 1)
+                {
+                    // Remember this position, it will be the start
+                    // position for the next region
+                    intIndex = j;
+                    // Move along the intersection line back to the
+                    // centroid, and add the poly point. To do this,
+                    // find the poly point with the same angle as
+                    // this point. it might be the same point as the
+                    // intersection, if so don't add it
+                    int k;
+                    for(k = 0; k < clippedPoly.points.size(); ++k)
+                    {
+                        if(std::abs(
+                            vecmath::angle(clippedPoly.points[k]-centroid) -
+                            vecmath::angle(p-centroid)) < 10e-5)
+                        {
+                            break;
+                        }
+                    }
+                    if(vecmath::norm(clippedPoly.points[k]-p) > 10e-5)
+                    {
+                        region.points.push_back(clippedPoly.points[k]);
+                    }
+                    // Now move clockwise around the poly and add
+                    // the point before
+                    int prevK = (k > 0 ? k-1 : clippedPoly.points.size()-1);
+                    region.points.push_back(clippedPoly.points[prevK]);
+                    // Move along this intersection line back to
+                    // the edge of the node, adding that point if
+                    // needed (as before)
+                    if(vecmath::norm(clippedPoly.points[prevK]-intersections[prevK]) > 10e-5)
+                    {
+                        region.points.push_back(intersections[prevK]);
+                    }
+                    // This point lies on the edge, so it needs
+                    // to be recorded
+                    addedPoints.insert(intersections[prevK]);
+                    // Decrement j until we find the point
+                    // corresponding to intersections[prevK]
+                    while(vecmath::norm(totalPoints[j]-intersections[prevK]) > 10e-5)
+                    {
+                        j = (j > 0 ? j-1 : totalPoints.size()-1);
+                    }
+                }
+            }
+            // Regions now contains the convex regions that our
+            // original node has been split up into
         }
     }
 };
