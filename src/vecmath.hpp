@@ -30,12 +30,18 @@ bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
     // dp is orthogonal to p1-p0, so if dp.dq = 0 then
     // dp is parallel to dq and there's no intersection
     if(std::abs(vecmath::dot(dp, dq)) < 10e-5) return false;
-    float mu = vecmath::dot((p0 - q0), dp) / vecmath::dot(dp, dq);
+    T mu = vecmath::dot((p0 - q0), dp) / vecmath::dot(dp, dq);
     // mu is parameter for Q
-    intersection->x = q0.x + mu * (q1.x-q0.x);
-    intersection->y = q0.y + mu * (q1.y-q0.y);
-
-    return true;
+    if(0 <= mu && mu <= 1)
+    {
+        intersection->x = q0.x + mu * (q1.x-q0.x);
+        intersection->y = q0.y + mu * (q1.y-q0.y);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 }
 
