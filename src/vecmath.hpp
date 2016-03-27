@@ -6,7 +6,9 @@
 
 namespace vecmath
 {
-template<typename T>
+    const float pi = 3.1415926535897;
+
+    template<typename T>
 T norm(const sf::Vector2<T>& a)
 {
     return std::sqrt(a.x*a.x + a.y*a.y);
