@@ -37,6 +37,7 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
 
 void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 {
+    // Panning using the keyboard
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
     {
         pan(sf::Vector2f(-1.0f, 0.0f), dt, window);
@@ -52,6 +53,29 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
     {
         pan(sf::Vector2f(0.0f, 1.0f), dt, window);
+    }
+
+    // Panning using the mouse
+    // Direction vectors cannot be taken directly, they must be scaled
+    // to line within [-w/2, w/2] on both axes
+    const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    const float w = ld::width;
+    const float h = ld::height;
+    if(mousePos.x < 2)
+    {
+        pan(sf::Vector2f(-w/2.0f, w*((float)mousePos.y/h - 0.5f)), dt, window);
+    }
+    else if(mousePos.x > ld::width - 2)
+    {
+        pan(sf::Vector2f(w/2.0f, w*((float)mousePos.y/h - 0.5f)), dt, window);
+    }
+    else if(mousePos.y < 2)
+    {
+        pan(sf::Vector2f((float)mousePos.x - w/2.0f, -w/2.0f), dt, window);
+    }
+    else if(mousePos.y > ld::height - 2)
+    {
+        pan(sf::Vector2f((float)mousePos.x - w/2.0f, w/2.0f), dt, window);
     }
 }
 
