@@ -30,6 +30,34 @@ T angle(const sf::Vector2<T>& a)
     return theta;
 }
 
+// Checks if an angle is greater than another
+template<typename T>
+bool isAngleGreater(T pA, T pB, bool strict=true)
+{
+    auto a = std::fmod(pA, 2*pi);
+    auto b = std::fmod(pB, 2*pi);
+    if(a < 0) a += 2*pi;
+    if(b < 0) b += 2*pi;
+    return (strict && a > b) || (!strict && a >= b);
+}
+template<typename T>
+bool isAngleLesser(T pA, T pB, bool strict=true)
+{
+    auto a = std::fmod(pA, 2*pi);
+    auto b = std::fmod(pB, 2*pi);
+    if(a < 0) a += 2*pi;
+    if(b < 0) b += 2*pi;
+    return (strict && a < b) || (!strict && a <= b);
+}
+
+// Checks if an angle is between two other angles
+template<typename T>
+bool isAngleBetween(T pTheta, T pA, T pB, bool strict=true)
+{
+    return isAngleGreater(pTheta, pA, strict) &&
+        isAngleLesser(pTheta, pB, strict);
+}
+
 template<typename T>
 bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
         const sf::Vector2<T>& q0, const sf::Vector2<T>& q1,
