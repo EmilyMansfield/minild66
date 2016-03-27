@@ -19,7 +19,7 @@ public:
     // Loop through the points in anticlockwise order and draw
     // a vector between consecutive points. If the points is
     // left of every vector, it's in the polygon
-    bool contains(const sf::Vector2f& point)
+    bool contains(const sf::Vector2f& point) const
     {
         for(int i = 0; i < points.size(); ++i)
         {
@@ -36,7 +36,7 @@ public:
         return true;
     }
 
-    sf::Vector2f centroid()
+    sf::Vector2f centroid() const
     {
         sf::Vector2f cent(0.0f, 0.0f);
         for(int i = 0; i < points.size(); ++i)
@@ -46,10 +46,10 @@ public:
             // does not introduce precision errors
             cent += points[i];
         }
-        return cent / points.size();
+        return cent / (float)points.size();
     }
 
-    ConvexPolygon intersect(const ConvexPolygon& b)
+    ConvexPolygon intersect(const ConvexPolygon& b) const
     {
         // Use a variant of the Sutherland-Hodgman algorithm
         // to calculate the intersection between two
@@ -60,32 +60,28 @@ public:
             auto p0 = b.points[i];
             // If A contains p0, p0 lies in the intersection
             if(this->contains(p0)) clipped.points.push_back(p0);
-            else
+            // The line joining p_i and p_(i+1) will intersect
+            // with A iff p_(i+1) lies in A. If there is no
+            // intersection then the point can be ignored and
+            // does not affect the clipped polygon.
+            auto p1 = b.points[(i+1)%b.points.size()];
+            if(!this->contains(p1)) continue;
+            // Find the edge of node which intersects with the
+            // edge of poly
+            for(int j = 0; j < this->points.size(); ++j)
             {
-                // The line joining p_i and p_(i+1) will intersect
-                // with A iff p_(i+1) lies in A. If there is no
-                // intersection then the point can be ignored and
-                // does not affect the clipped polygon.
-                auto p1 = b.points[(i+1)%b.points.size()];
-                if(!this->contains(p1)) continue;
-                // I've forgotten the usual way of computing vector
-                // intersections, so here's a weird method which
-                // is derived by setting the line equations equal
-                // to each other, then dotting with a normal to one
-                // of the lines.
-                for(int j = 0; j < a.points.size(); ++j)
+                auto q0 = this->points[j];
+                auto q1 = this->points[(j+1)%this->points.size()];
+                sf::Vector2f intersection;
+                if(vecmath::intersect(p0, p1, q0, q1, &intersection))
                 {
-                    auto q0 = a.points[j];
-                    auto q1 = a.points[(j+1)%a.points.size()];
-                    auto dp = sf::Vector2f(-(q1.y-q0.y), q1.x-q0.x);
-                    auto dq = q1 - q0;
-                    // dp is orthogonal to p1-p0, so if dp.dq = 0 then
-                    // dp is parallel to dq and there's no intersection
-                    if(std::abs(vecmath::dot(dp, dq)) < 10e-5) continue;
-                    float mu = vecmath::dot((p0 - q0), dp) / vecmath::dot(dp, dq);
+                    // Add the intersection as a point
+                    clipped.points.push_back(intersection);
+                    break;
                 }
             }
         }
+        return clipped;
     }
 };
 
@@ -146,9 +142,9 @@ public:
         // every node that poly lies in
         for(auto p : poly.points)
         {
-            for(int i = 0; i < polys.size(); ++i)
+            for(int i = 0; i < polys.nodes.size(); ++i)
             {
-                if(polys[i].contains(p))
+                if(polys.nodes[i].data.contains(p))
                 {
                     nodesIntersectingPoly.push_back(i);
                     break;
@@ -161,7 +157,7 @@ public:
         // convex polygon, so this is valid.
         for(auto i : nodesIntersectingPoly)
         {
-            const ConvexPolygon& node = polys[i];
+            const ConvexPolygon& node = polys.nodes[i].data;
             ConvexPolygon clippedPolygon;
             // Save some time by not performing polygon clipping if
             // poly lies entirely within node
