@@ -16,6 +16,12 @@ public:
     // First point must be ac of the positive horizontal
     std::vector<sf::Vector2f> points;
 
+    // Helper function to add points
+    void add(float x, float y)
+    {
+        points.push_back(sf::Vector2f(x, y));
+    }
+
     // Loop through the points in anticlockwise order and draw
     // a vector between consecutive points. If the points is
     // left of every vector, it's in the polygon
@@ -61,11 +67,12 @@ public:
             // If A contains p0, p0 lies in the intersection
             if(this->contains(p0)) clipped.points.push_back(p0);
             // The line joining p_i and p_(i+1) will intersect
-            // with A iff p_(i+1) lies in A. If there is no
-            // intersection then the point can be ignored and
+            // with A iff p_(i+1) lies in A and p_i does not.
+            // If there is no intersection then the point can be ignored and
             // does not affect the clipped polygon.
             auto p1 = b.points[(i+1)%b.points.size()];
-            if(!this->contains(p1)) continue;
+            if(this->contains(p0) && this->contains(p1)) continue;
+            else if(!this->contains(p0) && !this->contains(p1)) continue;
             // Find the edge of node which intersects with the
             // edge of poly
             for(int j = 0; j < this->points.size(); ++j)
