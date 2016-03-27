@@ -6,6 +6,8 @@
 #include "entity.hpp"
 #include "tileset.hpp"
 #include "game_map.hpp"
+#include "creature.hpp"
+#include "character.hpp"
 
 EntityManager::EntityManager() {}
 EntityManager::~EntityManager()
@@ -39,9 +41,15 @@ T* EntityManager::getEntity(const std::string& id) const
 
 template<> std::string entityToString<GameMap>() { return "gamemap"; }
 template<> std::string entityToString<Tileset>() { return "tileset"; }
+template<> std::string entityToString<Creature>() { return "creature"; }
+template<> std::string entityToString<Character>() { return "character"; }
 
 template void EntityManager::load<GameMap>(const std::string&);
 template void EntityManager::load<Tileset>(const std::string&);
+template void EntityManager::load<Creature>(const std::string&);
+template void EntityManager::load<Character>(const std::string&);
 
 template GameMap* EntityManager::getEntity<GameMap>(const std::string&) const;
 template Tileset* EntityManager::getEntity<Tileset>(const std::string&) const;
+template Creature* EntityManager::getEntity<Creature>(const std::string&) const;
+template Character* EntityManager::getEntity<Character>(const std::string&) const;

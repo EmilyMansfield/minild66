@@ -10,6 +10,7 @@
 
 class Tileset;
 class GameMap;
+class Character;
 
 int main()
 {
@@ -18,7 +19,8 @@ int main()
     // Load entities
     entityManager.load<Tileset>("tilesets.json");
     entityManager.load<GameMap>("game_map.json");
-
+    entityManager.load<Character>("characters.json");
+   
     // Create the window
     sf::RenderWindow window(sf::VideoMode(ld::width, ld::height), ld::title,
             sf::Style::Titlebar | sf::Style::Close);

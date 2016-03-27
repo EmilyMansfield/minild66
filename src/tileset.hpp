@@ -16,10 +16,11 @@ public:
     unsigned int x;
     unsigned int y;
     unsigned int len;
+    float duration;
 
     Animation() {}
-    Animation(unsigned int pX, unsigned int pY, unsigned int pLen) :
-        x(pX), y(pY), len(pLen) {}
+    Animation(unsigned int pX, unsigned int pY, unsigned int pLen, float pDuration) :
+        x(pX), y(pY), len(pLen), duration(pDuration) {}
 };
 
 class Tileset : public Entity

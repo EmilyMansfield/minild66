@@ -36,7 +36,8 @@ void Tileset::load(const JsonBox::Value& v, EntityManager* mgr)
             animations[aO["name"].getString()] = Animation(
                     aO["x"].getInteger(),
                     aO["y"].getInteger(),
-                    aO["len"].getInteger());
+                    aO["len"].getInteger(),
+                    aO["duration"].getFloat());
         }
     }
 }

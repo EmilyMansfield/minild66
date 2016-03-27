@@ -1,0 +1,18 @@
+{
+    "character_fighter": {
+        "hp_max": 500.0,
+        "hp_regen": 1.5,
+        "mp_max": 0.0,
+        "mp_regen": 0.0,
+        "move_speed": 1.0,
+        "stats": {
+            "str": 16,
+            "dex": 12,
+            "con": 15,
+            "mnd": 9,
+            "wis": 10,
+            "lck": 10
+        },
+        "tileset": "tileset_characters"
+    }
+}
