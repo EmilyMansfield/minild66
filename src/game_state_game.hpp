@@ -9,6 +9,7 @@
 #include "entity_manager.hpp"
 #include "game_map.hpp"
 #include "constants.hpp"
+#include "character.hpp"
 
 class GameStateGame : public GameState
 {
@@ -16,6 +17,7 @@ private:
     GameMap* map;
     sf::View view;
     float zoomLevel;
+    Character playerCharacter;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
@@ -31,6 +33,10 @@ public:
         view.setCenter(sf::Vector2f(
                     map->tilemap.ts * map->tilemap.w / 2.0f,
                     map->tilemap.ts * map->tilemap.h / 2.0f));
+        playerCharacter = *mgr->getEntity<Character>("character_fighter");
+        playerCharacter.setPos(sf::Vector2f(
+                    map->tilemap.ts * map->tilemap.w / 2.0f,
+                    map->tilemap.ts * map->tilemap.h / 2.0f));
     }
 
     virtual void handleEvent(const sf::Event& event,
@@ -43,6 +49,7 @@ public:
         target.clear(sf::Color::Green);
         target.setView(view);
         target.draw(map->tilemap, states);
+        target.draw(playerCharacter);
     }
 };
 

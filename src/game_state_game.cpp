@@ -81,5 +81,6 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 
 void GameStateGame::update(float dt)
 {
+    playerCharacter.update(dt);
 }
 

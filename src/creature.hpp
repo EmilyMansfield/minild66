@@ -72,8 +72,10 @@ public:
 
     virtual void update(float dt)
     {
+        mAnimT += dt;
         mSprite.setPosition(mPos);
-        int frame = mAnimT * mAnim->duration / mAnim->len;
+        int frame = mAnimT * mAnim->len / mAnim->duration;
+        if(frame >= mAnim->len) frame %= mAnim->len;
         // No point changing the frame when it doesn't need to be
         if(frame != mAnimCurrentFrame)
         {
@@ -89,6 +91,12 @@ public:
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
     {
         target.draw(mSprite);
+    }
+
+    virtual void setPos(const sf::Vector2f& pos)
+    {
+        mPos = pos;
+        mSprite.setPosition(mPos);
     }
 };
 
