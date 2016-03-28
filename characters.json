@@ -4,7 +4,7 @@
         "hp_regen": 1.5,
         "mp_max": 0.0,
         "mp_regen": 0.0,
-        "move_speed": 1.0,
+        "moveSpeed": 2.0,
         "stats": {
             "str": 16,
             "dex": 12,

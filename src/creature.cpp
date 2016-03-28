@@ -43,5 +43,6 @@ void Creature::load(const JsonBox::Value& v, EntityManager* mgr)
         mSprite.setTextureRect(sf::IntRect(mAnim->x, mAnim->y, mTs, mTs));
         mAnimT = 0.0f;
         mAnimCurrentFrame = 0;
+        mSprite.setOrigin(mTs/2.0, mTs/2.0);
     }
 }

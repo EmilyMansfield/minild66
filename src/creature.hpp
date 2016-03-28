@@ -98,6 +98,9 @@ public:
         mPos = pos;
         mSprite.setPosition(mPos);
     }
+
+    virtual sf::Vector2f getPos() { return mPos; }
+    virtual float getMoveSpeed() { return moveSpeed; }
 };
 
 #endif /* CREATURE_HPP */

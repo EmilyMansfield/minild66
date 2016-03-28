@@ -10,6 +10,7 @@
 #include "game_map.hpp"
 #include "constants.hpp"
 #include "character.hpp"
+#include "pathfinding_helper.hpp"
 
 class GameStateGame : public GameState
 {
@@ -18,6 +19,7 @@ private:
     sf::View view;
     float zoomLevel;
     Character playerCharacter;
+    PathfindingHelper playerPathfinder;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
@@ -37,6 +39,8 @@ public:
         playerCharacter.setPos(sf::Vector2f(
                     map->tilemap.ts * map->tilemap.w / 4.0f,
                     map->tilemap.ts * map->tilemap.h / 4.0f));
+        playerPathfinder = PathfindingHelper(playerCharacter.getPos(),
+                playerCharacter.getPos(), &map->navmesh);
     }
 
     virtual void handleEvent(const sf::Event& event,
