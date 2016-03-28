@@ -9,12 +9,15 @@
 #include "entity.hpp"
 #include "tileset.hpp"
 #include "creature.hpp"
+#include "pathfinding_helper.hpp"
 
 class EntityManager;
 
 class Character : public Creature
 {
 public:
+
+    PathfindingHelper pfHelper;
 
     Character() : Creature() {}
     Character(const std::string& id, const JsonBox::Value& v, EntityManager* mgr) :
@@ -27,6 +30,10 @@ public:
 
     virtual void update(float dt)
     {
+        // PathfindingHelper update needs a speed, not a time interval,
+        // because it doesn't know what it's attached to
+        pfHelper.update(dt * getMoveSpeed());
+        mPos = pfHelper.pos * (float)mTs;
         Creature::update(dt);
     }
 

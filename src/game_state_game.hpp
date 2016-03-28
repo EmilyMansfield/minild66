@@ -19,7 +19,6 @@ private:
     sf::View view;
     float zoomLevel;
     Character playerCharacter;
-    PathfindingHelper playerPathfinder;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
@@ -35,9 +34,10 @@ public:
         view.setCenter(sf::Vector2f(
                     map->tilemap.ts * map->tilemap.w / 2.0f,
                     map->tilemap.ts * map->tilemap.h / 2.0f));
-        playerCharacter = *mgr->getEntity<Character>("character_fighter");
+
         sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
-        playerPathfinder = PathfindingHelper(startPos, startPos, &map->graph);
+        playerCharacter = *mgr->getEntity<Character>("character_fighter");
+        playerCharacter.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
     }
 
     virtual void handleEvent(const sf::Event& event,
