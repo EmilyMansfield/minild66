@@ -30,34 +30,6 @@ T angle(const sf::Vector2<T>& a)
     return theta;
 }
 
-// Checks if an angle is greater than another
-template<typename T>
-bool isAngleGreater(T pA, T pB, bool strict=true)
-{
-    auto a = std::fmod(pA, 2*pi);
-    auto b = std::fmod(pB, 2*pi);
-    if(a < 0) a += 2*pi;
-    if(b < 0) b += 2*pi;
-    return (strict && a > b) || (!strict && a >= b);
-}
-template<typename T>
-bool isAngleLesser(T pA, T pB, bool strict=true)
-{
-    auto a = std::fmod(pA, 2*pi);
-    auto b = std::fmod(pB, 2*pi);
-    if(a < 0) a += 2*pi;
-    if(b < 0) b += 2*pi;
-    return (strict && a < b) || (!strict && a <= b);
-}
-
-// Checks if an angle is between two other angles
-template<typename T>
-bool isAngleBetween(T pTheta, T pA, T pB, bool strict=true)
-{
-    return isAngleGreater(pTheta, pA, strict) &&
-        isAngleLesser(pTheta, pB, strict);
-}
-
 template<typename T>
 bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
         const sf::Vector2<T>& q0, const sf::Vector2<T>& q1,
@@ -73,7 +45,7 @@ bool intersect(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1,
     T mu1 = vecmath::dot((p0 - q0), dpt) / vecmath::dot(dpt, dq);
     T mu2 = vecmath::dot((q0 - p0), dqt) / vecmath::dot(dqt, dp);
     // mu is parameter for Q
-    if(0 <= mu1 && 0 <= mu2 && (unboundAbove || mu1 <= 1) && mu2 <= 1)
+    if(0 <= mu1 && 0 <= mu2 && (unboundAbove || mu2 <= 1) && mu1 <= 1)
     {
         intersection->x = q0.x + mu1 * (q1.x-q0.x);
         intersection->y = q0.y + mu1 * (q1.y-q0.y);

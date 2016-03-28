@@ -7,8 +7,8 @@
 #include <cmath>
 #include <set>
 #include <JsonBox.h>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 #include "graph.hpp"
 #include "vecmath.hpp"
@@ -101,13 +101,7 @@ public:
                 {
                     // Add the intersection as a point
                     clipped.points.push_back(intersection);
-                    // std::cout << "Intersection between "
-                    //     << i << " to " << (i+1)%b.points.size() << " and "
-                    //     << j << " to " << (j+1)%this->points.size() << std::endl;
                 }
-                // std::cout << "No intersection between "
-                //     << i << " to " << (i+1)%b.points.size() << " and "
-                //     << j << " to " << (j+1)%this->points.size() << std::endl;
             }
         }
         // Add any A points which lie in B
@@ -149,6 +143,7 @@ public:
                 }
             }
         }
+        std::cout << "Intersections = " << intersections.size() << std::endl;
         // The points in intersections and the points in this->points
         // form the points of the convex polygons which make up the
         // subtracted region. They must be taken in clockwise order,
@@ -157,50 +152,45 @@ public:
         // First make a combined vector containing the intersections
         // and the node points, orientated anti-clockwise
         std::set<sf::Vector2f, vecmath::vec2_compare<float>> intSet;
-        std::vector<sf::Vector2f> totalPoints = { this->points[0] };
-        float oldTheta = vecmath::angle(this->points[0]-centroid);
-        for(int j = 1; j < this->points.size(); ++j)
+        std::vector<sf::Vector2f> totalPoints = this->points;
+        auto lessThan = [&centroid](const sf::Vector2f& a, const sf::Vector2f& b) {
+                return (a-centroid).x*(b-centroid).y - (a-centroid).y*(b-centroid).x > 0;
+            };
+        std::cout << std::string(50, '-') << std::endl;
+        for(int j = 0; j < intersections.size(); ++j)
         {
-            auto& p = this->points[j];
-            float newTheta = vecmath::angle(this->points[j]-centroid);
-            // Look for an intersect point that lies between
-            // oldTheta and newTheta
-            bool found = false;
-            for(auto q : this->points)
+            auto a = intersections[j];
+            for(int k = 0; k < totalPoints.size(); ++k)
             {
-                float theta = vecmath::angle(q-centroid);
-                if((oldTheta < theta && theta < newTheta) ||
-                    (oldTheta > vecmath::pi && newTheta < vecmath::pi &&
-                     (theta > oldTheta || theta < newTheta)))
+                auto b0 = totalPoints[k];
+                auto b1 = totalPoints[(k+1)%totalPoints.size()];
+                // If a lies between b0 and b1, insert it after b0.
+                // Since points are oriented ac, a should be to the
+                // left of b0 and the right of b1
+                if(lessThan(b0, a) && lessThan(a, b1))
                 {
-                    // Remember the intersection in a set. Since
-                    // all intersections should be visited, this
-                    // converts the intersection vector to a set
-                    intSet.insert(q);
-                    totalPoints.push_back(q);
-                    found = true;
+                    totalPoints.insert(totalPoints.begin()+k+1, a);
+                    // std::cout << "Inserted " << "(" << a.x << ", " << a.y << ")"
+                    //     << " between " << "(" << b0.x << ", " << b0.y << ")"
+                    //     << " and " << "(" << b1.x << ", " << b1.y << ")\n";
+                    break;
                 }
             }
-            // If one was found, there might be more so retry
-            // this loop iteration
-            if(found)
-            {
-                j -= 1;
-                continue;
-            }
-            // If one wasn't found, point p is the next point
-            else
-            {
-                totalPoints.push_back(p);
-            }
+            intSet.insert(a);
         }
+        // for(auto p : totalPoints)
+        // {
+        //     std::cout << "(" << p.x << ", " << p.y << ")\n";
+        // }
         std::vector<ConvexPolygon> regions;
         ConvexPolygon region;
         std::set<sf::Vector2f, vecmath::vec2_compare<float>> addedPoints;
         int intIndex = 0;
+        int n = 0;
+        std::cout << "Total points = " << totalPoints.size() << std::endl;
         for(int j = 0; j < totalPoints.size(); j = (j+1) % totalPoints.size())
         {
-            auto& p = totalPoints[j];
+            auto p = totalPoints[j];
             // Add the jth point if it hasn't already been added
             if(addedPoints.count(p) == 0)
             {
@@ -213,19 +203,20 @@ public:
                 regions.push_back(region);
                 // If every point has been visited, then we are
                 // done
-                if(addedPoints.size() == totalPoints.size())
+                if(addedPoints.size() >= totalPoints.size())
                 {
                     break;
                 }
                 // Otherwise we repeat for a new region, starting
                 // from the point we remembered earlier
                 region = ConvexPolygon();
-                addedPoints.clear();
+                // addedPoints.clear();
                 // We have to add the point now then continue
                 // so that it is not checked as an intersection
                 // and closed into the wrong region
-                addedPoints.insert(totalPoints[intIndex]);
+                // addedPoints.insert(totalPoints[intIndex]);
                 region.points.push_back(totalPoints[intIndex]);
+                j = intIndex;
                 continue;
             }
             // If this point is an intersection point, we need to
@@ -263,7 +254,12 @@ public:
                 // needed (as before)
                 if(vecmath::norm(clippedPoly.points[prevK]-intersections[prevK]) > 10e-5)
                 {
-                    region.points.push_back(intersections[prevK]);
+                    // This might already have been added as the first
+                    // point in the region
+                    if(addedPoints.count(intersections[prevK]) == 0)
+                    {
+                        region.points.push_back(intersections[prevK]);
+                    }
                 }
                 // This point lies on the edge, so it needs
                 // to be recorded
