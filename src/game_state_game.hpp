@@ -40,7 +40,7 @@ public:
                     map->tilemap.ts * map->tilemap.w / 4.0f,
                     map->tilemap.ts * map->tilemap.h / 4.0f));
         playerPathfinder = PathfindingHelper(playerCharacter.getPos(),
-                playerCharacter.getPos(), &map->navmesh);
+                playerCharacter.getPos(), &map->graph);
     }
 
     virtual void handleEvent(const sf::Event& event,

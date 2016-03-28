@@ -1,26 +1,29 @@
 #ifndef PATHFINDING_HELPER_HPP
 #define PATHFINDING_HELPER_HPP
 
-#include "navmesh.hpp"
-#include "graph.hpp"
+#include <SFML/System.hpp>
+#include "navgraph.hpp"
+#include "vecmath.hpp"
 
 class PathfindingHelper
 {
 private:
-    Navmesh* navmesh;
+    Graph<sf::Vector2u>* graph;
 
-    //  
 public:
 
     // Target position to aim for
-    // Must be contained within the navmesh for anything to happen
+    // Must be contained within the navgraph for anything to happen
     sf::Vector2f target;
     // Current position
     sf::Vector2f pos;
 
     PathfindingHelper() {}
     PathfindingHelper(const sf::Vector2f& mPos, const sf::Vector2f& mTarget,
-            Navmesh* mNavmesh) : navmesh(mNavmesh), target(mTarget), pos(mPos) {}
+            Graph<sf::Vector2u>* mNavgraph) :
+        graph(mNavgraph),
+        target(mTarget),
+        pos(mPos) {}
 
     void update(float speed)
     {

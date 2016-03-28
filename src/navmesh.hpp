@@ -121,6 +121,9 @@ public:
 
     std::vector<ConvexPolygon> subtract(const ConvexPolygon& clippedPoly) const
     {
+        std::vector<ConvexPolygon> regions;
+        if(clippedPoly.points.size() < 3) return regions;
+        
         // Find the centroid of clipped poly
         const sf::Vector2f centroid = clippedPoly.centroid();
         // Fire rays from the centroid through each vertex of the
@@ -172,7 +175,6 @@ public:
             }
             intSet.insert(a);
         }
-        std::vector<ConvexPolygon> regions;
         ConvexPolygon region;
         std::set<sf::Vector2f, vecmath::vec2_compare<float>> addedPoints;
         int intIndex = 0;
