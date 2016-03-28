@@ -2,11 +2,13 @@
 #define NAVMESH_HPP
 
 #include <SFML/System.hpp>
+#include <SFML/Graphics.hpp>
 #include <vector>
 #include <cmath>
 #include <set>
 #include <JsonBox.h>
 #include <iostream>
+#include <algorithm>
 
 #include "graph.hpp"
 #include "vecmath.hpp"
@@ -17,6 +19,20 @@ public:
     // Points defined in an anticlockwise direction
     // First point must be ac of the positive horizontal
     std::vector<sf::Vector2f> points;
+
+    // Make an drawable sf::ConvexShape out of this to aid in
+    // visualisation and debugging
+    sf::ConvexShape getShape(float height)
+    {
+        sf::ConvexShape shape;
+        shape.setPointCount(points.size());
+        for(int i = 0; i < points.size(); ++i)
+        {
+            shape.setPoint(i,
+                sf::Vector2f(points[i].x, height-points[i].y));
+        }
+        return shape;
+    }
 
     // Helper function to add points
     void add(float x, float y)
@@ -74,7 +90,6 @@ public:
             // does not affect the clipped polygon.
             auto p1 = b.points[(i+1)%b.points.size()];
             if(this->contains(p0) && this->contains(p1)) continue;
-            else if(!this->contains(p0) && !this->contains(p1)) continue;
             // Find the edge of node which intersects with the
             // edge of poly
             for(int j = 0; j < this->points.size(); ++j)
@@ -86,10 +101,22 @@ public:
                 {
                     // Add the intersection as a point
                     clipped.points.push_back(intersection);
-                    break;
+                    // std::cout << "Intersection between "
+                    //     << i << " to " << (i+1)%b.points.size() << " and "
+                    //     << j << " to " << (j+1)%this->points.size() << std::endl;
                 }
+                // std::cout << "No intersection between "
+                //     << i << " to " << (i+1)%b.points.size() << " and "
+                //     << j << " to " << (j+1)%this->points.size() << std::endl;
             }
         }
+        // Calculate the centroid
+        auto centroid = clipped.centroid();
+        // Sort the points in anticlockwise order
+        std::sort(clipped.points.begin(), clipped.points.end(),
+            [&centroid](sf::Vector2f& a, sf::Vector2f& b) {
+                return (a-centroid).x*(b-centroid).y - (a-centroid).y*(b-centroid).x < 0;
+            });
         return clipped;
     }
 
