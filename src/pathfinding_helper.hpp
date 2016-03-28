@@ -56,8 +56,13 @@ public:
 
     void setTarget(const sf::Vector2f& pTarget)
     {
+        auto newTargetNode = closestNode(pTarget);
+        // Check if clicked node is safe
+        if(vecmath::norm(vecmath::to<float,unsigned int>(newTargetNode)-pTarget) > 0.72)
+            return;
+        // Set the target positions
+        targetNode = newTargetNode;
         target = pTarget;
-
         // Find the nodes closest to the start and end points of
         // the path
         targetNode = closestNode(target);
@@ -68,21 +73,27 @@ public:
 
     void update(float speed)
     {
-        // If the path is empty, stop
-        if(path.empty()) return;
-
-        // Move in a straight line from the current position to the
-        // first node in the path
-        auto v = vecmath::to<float, unsigned int>(path.front()) - pos;
-        float norm = vecmath::norm(v);
-        if(norm > 0.1)
+        // If the path is empty or has just one entry it, we
+        // should be close enough to just move straight to the
+        // actual (and not node) destination.
+        if(path.size() < 2)
         {
-            pos += v / norm * speed;
+            auto v = target - pos;
+            float norm = vecmath::norm(v);
+            if(norm > 0.01) pos += v / norm * speed;
         }
-        // If suitably close to the path node, remove it
-        if(vecmath::norm(pos-vecmath::to<float, unsigned int>(path.front())) < 0.1)
+        else
         {
-            path.pop_front();
+            // Move in a straight line from the current position to the
+            // first node in the path
+            auto v = vecmath::to<float, unsigned int>(path.front()) - pos;
+            float norm = vecmath::norm(v);
+            if(norm > 0.1) pos += v / norm * speed;
+            // If suitably close to the path node, remove it
+            if(vecmath::norm(pos-vecmath::to<float, unsigned int>(path.front())) < 0.1)
+            {
+                path.pop_front();
+            }
         }
     }
 };
