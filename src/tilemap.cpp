@@ -49,6 +49,11 @@ Tilemap::Tilemap(const JsonBox::Array& a, Tileset* tileset)
             quad[1].texCoords = sf::Vector2f((u+1) * ts,  v    * ts);
             quad[2].texCoords = sf::Vector2f((u+1) * ts, (v+1) * ts);
             quad[3].texCoords = sf::Vector2f( u    * ts, (v+1) * ts);
+
+            for(int i = 0; i < 4; ++i)
+            {
+                quad[i].position -= sf::Vector2f(0.5f * ts, 0.5f*ts);
+            }
         }
     }
 }

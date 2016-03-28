@@ -37,9 +37,9 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
     if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
     {
         // Set the pathfinding target
-        playerPathfinder.target = window.mapPixelToCoords(sf::Vector2i(
+        playerPathfinder.setTarget(window.mapPixelToCoords(sf::Vector2i(
                     event.mouseButton.x,
-                    event.mouseButton.y));
+                    event.mouseButton.y)) / (float)map->tilemap.ts);
     }
 }
 
@@ -89,8 +89,8 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 
 void GameStateGame::update(float dt)
 {
-    playerPathfinder.update(dt * playerCharacter.getMoveSpeed() * map->tilemap.ts);
-    playerCharacter.setPos(playerPathfinder.pos);
+    playerPathfinder.update(dt * playerCharacter.getMoveSpeed());
+    playerCharacter.setPos(playerPathfinder.pos * (float)map->tilemap.ts);
     playerCharacter.update(dt);
 }
 

@@ -14,6 +14,13 @@ T norm(const sf::Vector2<T>& a)
     return std::sqrt(a.x*a.x + a.y*a.y);
 }
 
+// TODO: Proper conversion operators
+template<typename T, typename S>
+sf::Vector2<T> to(const sf::Vector2<S>& a)
+{
+    return sf::Vector2<T>(static_cast<T>(a.x), static_cast<T>(a.y));
+}
+
 template<typename T>
 T dot(const sf::Vector2<T>& a, const sf::Vector2<T>& b)
 {

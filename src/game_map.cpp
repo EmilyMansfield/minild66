@@ -25,5 +25,6 @@ void GameMap::load(const JsonBox::Value& v, EntityManager* mgr)
     {
         JsonBox::Array a = o["tilemap"].getArray();
         tilemap = Tilemap(a, tileset);
+        graph = Graph<sf::Vector2u>(tilemap, { 0 });
     }
 }

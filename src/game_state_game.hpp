@@ -36,11 +36,8 @@ public:
                     map->tilemap.ts * map->tilemap.w / 2.0f,
                     map->tilemap.ts * map->tilemap.h / 2.0f));
         playerCharacter = *mgr->getEntity<Character>("character_fighter");
-        playerCharacter.setPos(sf::Vector2f(
-                    map->tilemap.ts * map->tilemap.w / 4.0f,
-                    map->tilemap.ts * map->tilemap.h / 4.0f));
-        playerPathfinder = PathfindingHelper(playerCharacter.getPos(),
-                playerCharacter.getPos(), &map->graph);
+        sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
+        playerPathfinder = PathfindingHelper(startPos, startPos, &map->graph);
     }
 
     virtual void handleEvent(const sf::Event& event,
