@@ -110,6 +110,12 @@ public:
                 //     << j << " to " << (j+1)%this->points.size() << std::endl;
             }
         }
+        // Add any A points which lie in B
+        for(int i = 0; i < this->points.size(); ++i)
+        {
+            auto p0 = this->points[i];
+            if(b.contains(p0)) clipped.points.push_back(p0);
+        }
         // Calculate the centroid
         auto centroid = clipped.centroid();
         // Sort the points in anticlockwise order
