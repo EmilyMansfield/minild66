@@ -17,7 +17,6 @@ class GameStateGame : public GameState
 private:
     GameMap* map;
     sf::View view;
-    float zoomLevel;
     Character playerCharacter;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);

@@ -15,7 +15,7 @@ set(EXECUTABLE_NAME "minild66")
 add_executable(${EXECUTABLE_NAME} ${SOURCES})
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules" ${CMAKE_MODULE_PATH})
-find_package(SFML 2.3 COMPONENTS system graphics window)
+find_package(SFML 2.3 COMPONENTS system graphics window network)
 if(SFML_FOUND)
     include_directories(${SFML_INCLUDE_DIRS})
     set(PROJECT_LINK_LIBS ${PROJECT_LINK_LIBS} ${SFML_LIBRARIES})

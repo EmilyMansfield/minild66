@@ -10,6 +10,7 @@ extern unsigned int width;
 extern unsigned int height;
 extern const char* title;
 extern const float cameraPanSpeed;
+extern bool isServer;
 }
 
 #endif /* CONSTANTS_HPP */
