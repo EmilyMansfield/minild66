@@ -6,6 +6,8 @@
 #include <utility>
 #include <stdexcept>
 #include <iostream>
+#include <cmath>
+
 #include "navgraph.hpp"
 #include "vecmath.hpp"
 
@@ -68,7 +70,13 @@ public:
         targetNode = closestNode(target);
         posNode = closestNode(pos);
         // Find a path between the start and end points
-        path = breadthFirstSearch(graph, posNode, targetNode);
+        // path = breadthFirstSearch(graph, posNode, targetNode);
+        path = astarSearch(graph, posNode, targetNode,
+            [](const sf::Vector2u& a, const sf::Vector2u& b)
+            {
+                return std::abs((float)a.x-(float)b.x) +
+                    std::abs((float)a.y-(float)b.y);
+            });
     }
 
     void update(float speed)

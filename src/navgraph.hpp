@@ -9,7 +9,7 @@
 #include <functional>
 #include <utility>
 #include <SFML/System.hpp>
-
+#include <iostream>
 #include "tilemap.hpp"
 
 // Needed for unordered_map
@@ -110,6 +110,11 @@ std::list<T> breadthFirstSearch(Graph<T>* g, const T& start, const T& end)
         T current = frontier.front();
         frontier.pop();
 
+        if(current == end)
+        {
+            break;
+        }
+
         for(auto node : g->neighbours(current))
         {
             auto n = node.first; // Ignore edge weights here
@@ -121,17 +126,69 @@ std::list<T> breadthFirstSearch(Graph<T>* g, const T& start, const T& end)
                 // came from
                 frontier.push(n);
                 cameFrom[n] = current;
-                // If the neighbouring node was our destination, we
-                // are done
-                if(n == end)
-                {
-                    frontier = std::queue<T>();
-                    break;
-                }
             }
         }
     }
     // Now backtrack from the end node until the start node is reached
+    std::list<T> path;
+    T current = end;
+    while(current != start)
+    {
+        path.push_front(current);
+        current = cameFrom[current];
+    }
+    return path;
+}
+
+// heuristic should have signature
+// float heuristic(const T& a, const T& b)
+template<typename T, typename Func>
+std::list<T> astarSearch(Graph<T>* g, const T& start, const T& end, Func heuristic)
+{
+    auto cmp = [](const std::pair<T, float>& a, const std::pair<T, float>& b)
+    {
+        return a.second < b.second;
+    };
+    std::priority_queue<
+        std::pair<T, float>,
+        std::vector<std::pair<T, float>>,
+        decltype(cmp)> frontier(cmp);
+    std::unordered_map<T, T> cameFrom;
+    std::unordered_map<T, float> costSoFar;
+
+    frontier.push(std::make_pair(start, 0.0f));
+    cameFrom[start] = start;
+    costSoFar[start] = 0.0f;
+
+    while(!frontier.empty())
+    {
+        auto current = frontier.top().first;
+        frontier.pop();
+
+        if(current == end)
+        {
+            break;
+        }
+
+        for(auto node : g->neighbours(current))
+        {
+            auto n = node.first;
+            // Cost up to the current node, plus cost from the current
+            // node to the neighbour
+            float cost = costSoFar[current] + node.second;
+            // If this is a smaller cost than before or we haven't been
+            // here yet
+            if(costSoFar.count(n) < 1 || cost < costSoFar[n])
+            {
+                // Add it to the frontier, prioritised according to the
+                // the estimated distance to the end
+                costSoFar[n] = cost;
+                frontier.push(std::make_pair(n, cost + heuristic(n, end)));
+                cameFrom[n] = current;
+            }
+        }
+    }
+    // Extract the path
     std::list<T> path;
     T current = end;
     while(current != start)
