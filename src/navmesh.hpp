@@ -176,8 +176,6 @@ public:
         ConvexPolygon region;
         std::set<sf::Vector2f, vecmath::vec2_compare<float>> addedPoints;
         int intIndex = 0;
-        int n = 0;
-        std::cout << "Total points = " << totalPoints.size() << std::endl;
         for(int j = 0; j < totalPoints.size(); j = (j+1) % totalPoints.size())
         {
             auto p = totalPoints[j];
