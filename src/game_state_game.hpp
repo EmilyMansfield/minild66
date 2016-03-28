@@ -28,12 +28,13 @@ public:
             EntityManager* mgr) :
         GameState(state, prevState, mgr)
     {
-        map = mgr->getEntity<GameMap>("gamemap_5v5");
-        zoomLevel = 2.0f;
-        view = sf::View(sf::FloatRect(0, 0, ld::width / zoomLevel, ld::height / zoomLevel));
+        map = mgr->getEntity<GameMap>("gamemap_large");
+        view = sf::View(sf::FloatRect(0, 0,
+            ld::widthTiles * map->tilemap.ts,
+            ld::heightTiles * map->tilemap.ts));
         view.setCenter(sf::Vector2f(
-                    map->tilemap.ts * map->tilemap.w / 2.0f,
-                    map->tilemap.ts * map->tilemap.h / 2.0f));
+            map->tilemap.w * map->tilemap.ts / 2.0f,
+            map->tilemap.h * map->tilemap.ts / 2.0f));
 
         sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
         playerCharacter = *mgr->getEntity<Character>("character_fighter");

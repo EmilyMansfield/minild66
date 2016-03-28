@@ -10,7 +10,7 @@ void GameStateGame::pan(const sf::Vector2f& dir, float dt, const sf::RenderWindo
     // Normalise direction vector
     const sf::Vector2f nDir = dir / vecmath::norm<float>(dir);
     // Camera panning speed
-    float camPan = ld::cameraPanSpeed * map->tilemap.ts * zoomLevel * dt;
+    float camPan = ld::cameraPanSpeed * map->tilemap.ts * dt;
     // Lambda and constants for shorthand
     auto windowPos = [&window](int x, int y)
     {
