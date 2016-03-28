@@ -52,6 +52,11 @@ class Graph<sf::Vector2u>
 public:
     std::unordered_map<sf::Vector2u, std::vector<sf::Vector2u>> edges;
 
+    std::vector<sf::Vector2u> neighbours(sf::Vector2u node)
+    {
+        return edges[node];
+    }
+
     Graph() {}
 
     // Add nodes at each accessible tile in the tilemap and join
@@ -88,11 +93,11 @@ public:
 };
 
 template<typename T>
-void breadthFirstSearch(const Graph<T>& g, const T& start, const T& end)
+std::list<T> breadthFirstSearch(Graph<T>* g, const T& start, const T& end)
 {
     // Nodes to examine
     std::queue<T> frontier;
-    frontier.insert(start);
+    frontier.push(start);
     // Bactrack through this to find the final path
     std::unordered_map<T, T> cameFrom;
     cameFrom[start] = start;
@@ -103,7 +108,7 @@ void breadthFirstSearch(const Graph<T>& g, const T& start, const T& end)
         T current = frontier.front();
         frontier.pop();
 
-        for(auto n : g.neighbours(current))
+        for(auto n : g->neighbours(current))
         {
             // If n has not come from anywhere, i.e. we haven't
             // visited n yet
@@ -112,12 +117,12 @@ void breadthFirstSearch(const Graph<T>& g, const T& start, const T& end)
                 // Add it to the frontier and remember where we
                 // came from
                 frontier.push(n);
-                cameFrom(n) = current;
+                cameFrom[n] = current;
                 // If the neighbouring node was our destination, we
                 // are done
                 if(n == end)
                 {
-                    frontier.clear();
+                    frontier = std::queue<T>();
                     break;
                 }
             }
@@ -129,7 +134,7 @@ void breadthFirstSearch(const Graph<T>& g, const T& start, const T& end)
     while(current != start)
     {
         path.push_front(current);
-        current = cameFrom(current);
+        current = cameFrom[current];
     }
     return path;
 }
