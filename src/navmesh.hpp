@@ -8,7 +8,6 @@
 #include <set>
 #include <JsonBox.h>
 #include <algorithm>
-#include <iostream>
 
 #include "graph.hpp"
 #include "vecmath.hpp"
@@ -143,7 +142,6 @@ public:
                 }
             }
         }
-        std::cout << "Intersections = " << intersections.size() << std::endl;
         // The points in intersections and the points in this->points
         // form the points of the convex polygons which make up the
         // subtracted region. They must be taken in clockwise order,
@@ -156,7 +154,6 @@ public:
         auto lessThan = [&centroid](const sf::Vector2f& a, const sf::Vector2f& b) {
                 return (a-centroid).x*(b-centroid).y - (a-centroid).y*(b-centroid).x > 0;
             };
-        std::cout << std::string(50, '-') << std::endl;
         for(int j = 0; j < intersections.size(); ++j)
         {
             auto a = intersections[j];
@@ -170,18 +167,11 @@ public:
                 if(lessThan(b0, a) && lessThan(a, b1))
                 {
                     totalPoints.insert(totalPoints.begin()+k+1, a);
-                    // std::cout << "Inserted " << "(" << a.x << ", " << a.y << ")"
-                    //     << " between " << "(" << b0.x << ", " << b0.y << ")"
-                    //     << " and " << "(" << b1.x << ", " << b1.y << ")\n";
                     break;
                 }
             }
             intSet.insert(a);
         }
-        // for(auto p : totalPoints)
-        // {
-        //     std::cout << "(" << p.x << ", " << p.y << ")\n";
-        // }
         std::vector<ConvexPolygon> regions;
         ConvexPolygon region;
         std::set<sf::Vector2f, vecmath::vec2_compare<float>> addedPoints;
