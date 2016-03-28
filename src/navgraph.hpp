@@ -86,7 +86,8 @@ public:
                         auto t1 = tm.at(x+dx, y+dy);
                         if(safe.count(t1) == 0) continue;
                         edges[sf::Vector2u(x, y)].push_back(
-                            std::make_pair(sf::Vector2u(x+dx,y+dy), 1.0f));
+                            std::make_pair(sf::Vector2u(x+dx,y+dy),
+                                (dy == 0 || dx == 0 ? 1.0f : 1.4f)));
                     } // Brace cascade of shaaaaame
                 }
             }
@@ -147,7 +148,7 @@ std::list<T> astarSearch(Graph<T>* g, const T& start, const T& end, Func heurist
 {
     auto cmp = [](const std::pair<T, float>& a, const std::pair<T, float>& b)
     {
-        return a.second < b.second;
+        return a.second > b.second;
     };
     std::priority_queue<
         std::pair<T, float>,
