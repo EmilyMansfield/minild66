@@ -9,6 +9,8 @@
 #include <SFML/System.hpp>
 #include <JsonBox.h>
 #include <iostream>
+#include <cerrno>
+#include <cstring>
 
 // Should probably just define a new stream?
 #define servout (std::cout << "[SERVER] ")
@@ -78,7 +80,6 @@ public:
         }
 
         // Open UDP socket
-        sf::UdpSocket mSocket;
         if(mSocket.bind(mPort) != sf::Socket::Done)
         {
             throw std::runtime_error("Failed to open socket on port "
@@ -86,10 +87,14 @@ public:
         }
         if(ld::isServer) servout << "Bound to port " << mSocket.getLocalPort() << std::endl;
         else             clntout << "Bound to port " << mSocket.getLocalPort() << std::endl;
-        mSocket.setBlocking(true);
     }
 
     NetworkManager() : mPort(49518) {}
+
+    ~NetworkManager()
+    {
+        mSocket.unbind();
+    }
 
     unsigned short getPort() const
     {
@@ -148,11 +153,13 @@ public:
             {
                 servout << "Failed with status " << returnCode << std::endl;
                 servout << "\tPacket size was " << packet.getDataSize() << std::endl;
+                servout << "\t" << std::strerror(errno) << std::endl;
             }
             else
             {
                 clntout << "Failed with status " << returnCode << std::endl;
                 clntout << "\tPacket size was " << packet.getDataSize() << std::endl;
+                clntout << "\t" << std::strerror(errno) << std::endl;
             }
             sf::sleep(sf::seconds(0.1f));
             return false;
