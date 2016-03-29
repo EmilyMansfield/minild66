@@ -7,6 +7,12 @@
 #include <queue>
 #include <SFML/Network.hpp>
 #include <SFML/System.hpp>
+#include <JsonBox.h>
+#include <iostream>
+
+// Should probably just define a new stream?
+#define servout (std::cout << "[SERVER] ")
+#define clntout (std::cout << "[CLIENT] ")
 
 class NetworkManager
 {
@@ -62,10 +68,15 @@ private:
 
 public:
 
-    NetworkManager() : mPort(49518) {}
-    NetworkManager(unsigned short port) :
-        mPort(port)
+    NetworkManager(const JsonBox::Value& v)
     {
+        mPort = 49518;
+        JsonBox::Object o = v.getObject();
+        if(o.find("port") != o.end())
+        {
+            mPort = o["port"].getInteger();
+        }
+
         // Open UDP socket
         sf::UdpSocket mSocket;
         if(mSocket.bind(mPort) != sf::Socket::Done)
@@ -73,10 +84,20 @@ public:
             throw std::runtime_error("Failed to open socket on port "
                 + std::to_string(mPort));
         }
+        if(ld::isServer) servout << "Bound to port " << mSocket.getLocalPort() << std::endl;
+        else             clntout << "Bound to port " << mSocket.getLocalPort() << std::endl;
+        mSocket.setBlocking(true);
+    }
+
+    NetworkManager() : mPort(49518) {}
+
+    unsigned short getPort() const
+    {
+        return mPort;
     }
 
     // Construct a packet from an event and send it
-    void send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort)
+    sf::Socket::Status send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort)
     {
         sf::Packet packet;
         switch(event.type)
@@ -97,9 +118,9 @@ public:
                        << event.disconnect.gameId
                        << event.disconnect.charId;
                 break;
-            default: return;
+            default: return sf::Socket::Error;
         }
-        mSocket.send(packet, remoteAddress, remotePort);
+        return mSocket.send(packet, remoteAddress, remotePort);
     }
 
     // Take the next event out of the event queue
@@ -120,7 +141,22 @@ public:
         unsigned short port;
         
         // Wait for an incoming connection
-        mSocket.receive(packet, sender, port);
+        sf::Socket::Status returnCode;
+        if((returnCode = mSocket.receive(packet, sender, port)) != sf::Socket::Done)
+        {
+            if(ld::isServer)
+            {
+                servout << "Failed with status " << returnCode << std::endl;
+                servout << "\tPacket size was " << packet.getDataSize() << std::endl;
+            }
+            else
+            {
+                clntout << "Failed with status " << returnCode << std::endl;
+                clntout << "\tPacket size was " << packet.getDataSize() << std::endl;
+            }
+            sf::sleep(sf::seconds(0.1f));
+            return false;
+        }
 
         // Extract event type. Can't send and receive enums directly
         // so force them into something we know the size of
@@ -129,6 +165,8 @@ public:
         if(t == 0 || t >= static_cast<sf::Uint8>(Event::Count))
         {
             // Invalid packet
+            if(ld::isServer) servout << "Packet had invalid type" << std::endl;
+            else             clntout << "Packet had invalid type" << std::endl;
             return false;
         }
         auto type = static_cast<Event::EventType>(t);
@@ -137,6 +175,9 @@ public:
         sf::Uint32 eventIp = 0;
         if(!(packet >> eventIp))
         {
+            // Invalid packet
+            if(ld::isServer) servout << "Packet had invalid ip" << std::endl;
+            else             clntout << "Packet had invalid ip" << std::endl;
             return false;
         }
 
@@ -144,6 +185,9 @@ public:
         sf::Uint16 eventPort = 0;
         if(!(packet >> eventPort))
         {
+            // Invalid packet
+            if(ld::isServer) servout << "Packet had invalid port" << std::endl;
+            else             clntout << "Packet had invalid port" << std::endl;
             return false;
         }
 

@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <JsonBox.h>
 
 #include "constants.hpp"
 #include "game_state.hpp"
@@ -13,9 +14,6 @@
 #include "game_state_game.hpp"
 #include "entity_manager.hpp"
 #include "network_manager.hpp"
-
-// Should probably just define a new stream?
-#define servout (std::cout << "[SERVER] ")
 
 class Tileset;
 class GameMap;
@@ -51,8 +49,10 @@ int main(int argc, char* argv[])
     entityManager.load<GameMap>("game_map.json");
     entityManager.load<Character>("characters.json");
 
-
-    NetworkManager networkManager;
+    // Load network manager
+    JsonBox::Value configFile;
+    configFile.loadFromFile("config.json");
+    NetworkManager networkManager(configFile[ld::isServer ? "server" : "client"]);
 
     // Open a thread for listening to incoming connections
     bool killPollNetworkThread = false;
@@ -184,6 +184,20 @@ int main(int argc, char* argv[])
         // Frame time
         sf::Clock clock;
 
+        // Attempt to connect to server
+        NetworkManager::Event connectEvent;
+        connectEvent.connect = {
+            .sender = sf::IpAddress::getLocalAddress(),
+            .port = networkManager.getPort(),
+            .gameId = 0, // These are ignored, since the server allocates them
+            .charId = 0
+        };
+        connectEvent.type = NetworkManager::Event::Connect;
+        if(networkManager.send(connectEvent, sf::IpAddress("192.168.0.43"), 49518) != sf::Socket::Done)
+        {
+            clntout << "Failed to send connect message" << std::endl;
+        }
+
         // Game loop
         while(window.isOpen())
         {
@@ -208,6 +222,18 @@ int main(int argc, char* argv[])
                     default:
                     case NetworkManager::Event::Nop:
                     {
+                        break;
+                    }
+                    case NetworkManager::Event::Connect:
+                    {
+                        auto e = netEvent.connect;
+                        clntout << e.sender.toString() << " has connected" << std::endl;
+                        break;
+                    }
+                    case NetworkManager::Event::Disconnect:
+                    {
+                        auto e = netEvent.disconnect;
+                        clntout << e.sender.toString() << " has disconnected" << std::endl;
                         break;
                     }
                 }
