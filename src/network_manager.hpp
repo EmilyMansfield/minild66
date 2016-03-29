@@ -24,6 +24,10 @@ private:
     sf::IpAddress mIp;
     sf::UdpSocket mSocket;
 
+    // The server the client is connected to. Ignored on a server
+    unsigned short mRemotePort;
+    sf::IpAddress mRemoteIp;
+
 public:
 
     // Use similar structure to sf::Event
@@ -84,6 +88,10 @@ public:
     bool connectToServer(const sf::IpAddress &remoteAddress,
         unsigned short remotePort,
         sf::Uint16 gameId);
+
+    // Disconnect from server. Does nothing on a client or
+    // if not connected to a server
+    bool disconnectFromServer();
 
     // Construct a packet from an event and send it
     sf::Socket::Status send(const Event& event,

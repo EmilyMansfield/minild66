@@ -31,7 +31,7 @@ NetworkManager::NetworkManager(const JsonBox::Value& v)
     else             clntout << "Bound to port " << mSocket.getLocalPort() << std::endl;
 }
 
-NetworkManager::NetworkManager() : mPort(49518) {}
+NetworkManager::NetworkManager() : mPort(49518), mRemotePort(0) {}
 
 NetworkManager::~NetworkManager()
 {
@@ -81,13 +81,39 @@ bool NetworkManager::connectToServer(const sf::IpAddress &remoteAddress,
         .charId = 0 // Allocated by server
     };
     e.type = NetworkManager::Event::Connect;
-    if(send(e, remoteAddress, 49518) != sf::Socket::Done)
+    if(send(e, remoteAddress, remotePort) != sf::Socket::Done)
     {
         clntout << "Failed to send connect message to "
             << remoteAddress.toString() << " on port "
             << remotePort << std::endl;
         clntout << "\t" << std::strerror(errno) << std::endl;
+        return false;
+    }
 
+    mRemotePort = remotePort;
+    mRemoteIp = remoteAddress;
+
+    return true;
+}
+
+bool NetworkManager::disconnectFromServer()
+{
+    if(ld::isServer) return false;
+
+    Event e;
+    e.disconnect = {
+        .sender = mIp,
+        .port = mPort,
+        .gameId = 0,
+        .charId = 0
+    };
+    e.type = NetworkManager::Event::Disconnect;
+    if(send(e, mRemoteIp, mRemotePort) != sf::Socket::Done)
+    {
+        clntout << "Failed to send disconnect message to "
+            << mRemoteIp.toString() << " on port "
+            << mRemotePort << std::endl;
+        clntout << "\t" << std::strerror(errno) << std::endl;
         return false;
     }
 
