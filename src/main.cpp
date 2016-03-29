@@ -6,6 +6,8 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 #include <JsonBox.h>
 
 #include "constants.hpp"
@@ -14,6 +16,7 @@
 #include "game_state_game.hpp"
 #include "entity_manager.hpp"
 #include "network_manager.hpp"
+#include "game_container.hpp"
 
 class Tileset;
 class GameMap;
@@ -43,6 +46,8 @@ int main(int argc, char* argv[])
         ld::isServer = true;
     }
 
+    std::srand(std::time(nullptr));
+
     EntityManager entityManager;
     // Load entities
     entityManager.load<Tileset>("tilesets.json");
@@ -64,6 +69,11 @@ int main(int argc, char* argv[])
     if(ld::isServer)
     {
         bool running = true;
+        // Currently connected clients
+        // TODO: Identifying by IP is not a safe way to do this, time of
+        // connection may be better; they are guaranteed to be unique
+        // among all clients since the server receives events
+        // serially and not concurrently.
         auto ipCmp = [](const sf::IpAddress& a, const sf::IpAddress& b)
         {
             return a.toInteger() < b.toInteger();
@@ -75,6 +85,8 @@ int main(int argc, char* argv[])
             sf::Uint8 charId;
         };
         std::map<sf::IpAddress, ClientInfo, decltype(ipCmp)> connectedClients(ipCmp);
+        // Games currently running on this server
+        std::map<sf::Uint16, GameContainer> games;
 
         while(running)
         {
@@ -100,19 +112,49 @@ int main(int argc, char* argv[])
                         }
                         else
                         {
-                            servout << e.sender.toString() << " has connected" << std::endl;
-                            // Add to the list of connected clients
-                            connectedClients[e.sender] = (ClientInfo){
-                                .ip = e.sender,
-                                .port = e.port,
-                                .gameId = e.gameId,
-                                .charId = e.charId
-                            };
-                            // Broadcast this to all connected clients
-                            // TODO: Send to clients on a need-to-know basis
-                            for(auto c : connectedClients)
+                            // If the game doesn't exist yet, make it
+                            if(games.count(e.gameId) == 0)
                             {
-                                networkManager.send(netEvent, c.second.ip, c.second.port);
+                                games[e.port] = GameContainer();
+                            }
+                            GameContainer& game = games[e.port];
+                            // Attempt to add to a team
+                            // TODO: Add team choosing
+                            if(game.add("character_fighter", GameContainer::Team::Any, &entityManager))
+                            {
+                                // Added to the team, send a success
+                                // message to connected clients
+                                servout << e.sender.toString() << " has connected to game "
+                                    << e.gameId << std::endl;
+                                // Add to the list of connected clients
+                                connectedClients[e.sender] = (ClientInfo){
+                                    .ip = e.sender,
+                                    .port = e.port,
+                                    .gameId = e.gameId,
+                                    .charId = e.charId
+                                };
+                                // TODO: Send to clients on a need-to-know basis
+                                for(auto c : connectedClients)
+                                {
+                                    networkManager.send(netEvent, c.second.ip, c.second.port);
+                                }
+                            }
+                            else
+                            {
+                                // Couldn't add, so respond with
+                                // a failure message
+                                // TODO: When you're 8 indents in,
+                                // it's probably time to refactor
+                                NetworkManager::Event response;
+                                response.gameFull = {
+                                    .sender = e.sender,
+                                    .port = e.port,
+                                    .gameId = e.gameId
+                                };
+                                response.type = NetworkManager::Event::GameFull;
+                                servout << "Game " << e.gameId
+                                    << " is full, rejecting with message" << std::endl;
+                                networkManager.send(response, e.sender, e.port);
                             }
                         }
                         break;
@@ -239,6 +281,13 @@ int main(int argc, char* argv[])
                     {
                         auto e = netEvent.disconnect;
                         clntout << e.sender.toString() << " has disconnected" << std::endl;
+                        break;
+                    }
+                    case NetworkManager::Event::GameFull:
+                    {
+                        auto e = netEvent.gameFull;
+                        clntout << e.gameId << " is full, sorry" << std::endl;
+                        window.close();
                         break;
                     }
                 }

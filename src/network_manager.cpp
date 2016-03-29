@@ -155,6 +155,11 @@ sf::Socket::Status NetworkManager::send(const Event& event,
                    << event.disconnect.gameId
                    << event.disconnect.charId;
             break;
+        case Event::GameFull:
+            packet << event.gameFull.sender.toInteger()
+                   << event.gameFull.port
+                   << event.gameFull.gameId;
+            break;
         default: return sf::Socket::Error;
     }
     return mSocket.send(packet, remoteAddress, remotePort);
@@ -274,6 +279,20 @@ bool NetworkManager::waitEvent()
                .charId = charId
             };
             e.type = Event::Disconnect;
+            mEventQueue.push(e);
+            return true;
+        }
+        case Event::GameFull:
+        {
+            sf::Uint16 gameId = 0;
+            if(!(packet >> gameId)) return false;
+            Event e;
+            e.gameFull = {
+                .sender = sf::IpAddress(eventIp),
+                .port = eventPort,
+                .gameId = gameId,
+            };
+            e.type = Event::GameFull;
             mEventQueue.push(e);
             return true;
         }

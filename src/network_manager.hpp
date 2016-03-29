@@ -52,11 +52,18 @@ public:
             sf::Uint16 gameId; // Game they were connected to
             sf::Uint8 charId; // Which slot they were in
         };
+        struct GameFullEvent
+        {
+            sf::IpAddress sender;
+            sf::Uint16 port;
+            sf::Uint16 gameId;
+        };
 
         enum EventType {
             Nop,        // No request
             Connect,    // A player has connected
             Disconnect, // A player has disconnected
+            GameFull,   // No room to join a game, both teams full
             Move,       // Creature is moving
             Count
         };
@@ -66,6 +73,7 @@ public:
             NopEvent            nop;
             ConnectEvent        connect;
             DisconnectEvent     disconnect;
+            GameFullEvent       gameFull;
         };
 
         Event() {}
