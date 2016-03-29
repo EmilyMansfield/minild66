@@ -105,6 +105,7 @@ public:
     sf::Socket::Status send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort)
     {
         sf::Packet packet;
+        packet << static_cast<sf::Uint16>(event.type);
         switch(event.type)
         {
             case Event::Nop:
