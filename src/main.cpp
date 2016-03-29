@@ -256,6 +256,20 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Attempt to disconnect from server
+    NetworkManager::Event disconnectEvent;
+    disconnectEvent.disconnect = {
+        .sender = sf::IpAddress::getLocalAddress(),
+        .port = networkManager.getPort(),
+        .gameId = 0,
+        .charId = 0
+    };
+    disconnectEvent.type = NetworkManager::Event::Disconnect;
+    if(networkManager.send(disconnectEvent, sf::IpAddress("192.168.0.43"), 49518) != sf::Socket::Done)
+    {
+        clntout << "Failed to send disconnect message" << std::endl;
+    }
+
     // Kill the network thread and join
     killPollNetworkThread = true;
     pollNetworkThread.join();
