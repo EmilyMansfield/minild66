@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <map>
-#include <functional>
+#include <queue>
 #include <SFML/Network.hpp>
 #include <SFML/System.hpp>
 
@@ -41,6 +41,7 @@ public:
             Connect,    // A player has connected
             Disconnect, // A player has disconnected
             Move,       // Creature is moving
+            Count
         };
         EventType type;
 
@@ -50,6 +51,11 @@ public:
             DisconnectEvent     disconnect;
         };
     };
+
+private:
+        std::queue<Event> mEventQueue;
+
+public:
 
     NetworkManager() : mPort(49518) {}
     NetworkManager(unsigned short port) :
@@ -61,6 +67,91 @@ public:
         {
             throw std::runtime_error("Failed to open socket on port "
                 + std::to_string(mPort));
+        }
+    }
+
+    // Take the next event out of the event queue
+    bool pollEvent(Event& event)
+    {
+        if(mEventQueue.empty()) return false;
+        event = mEventQueue.front();
+        mEventQueue.pop();
+        return true;
+    }
+
+    // Wait for an incoming connect and parse it as an event. If it
+    // was a valid event, add it to the event queue and return true
+    bool waitEvent()
+    {
+        sf::Packet packet;
+        sf::IpAddress sender;
+        unsigned short port;
+        
+        // Wait for an incoming connection
+        mSocket.receive(packet, sender, port);
+
+        // Extract event type. Can't send and receive enums directly
+        // so force them into something we know the size of
+        sf::Uint16 t = 0;
+        packet >> t;
+        if(t == 0 || t >= static_cast<sf::Uint8>(Event::Count))
+        {
+            // Invalid packet
+            return false;
+        }
+        auto type = static_cast<Event::EventType>(t);
+
+        // Depending on the type of the packet, we extract different
+        // data
+        switch(type)
+        {
+            case Event::Nop:
+            {
+                Event e =
+                {
+                    .nop = {
+                        .sender = sender
+                    },
+                    .type = Event::Nop
+                };
+                mEventQueue.push(e);
+                return true;
+            }
+            case Event::Connect:
+            {
+                sf::Uint8 gameId = 0;
+                sf::Uint8 charId = 0;
+                if(!(packet >> gameId >> charId)) return false;
+                Event e =
+                {
+                    .connect = {
+                        .sender = sender,
+                        .gameId = gameId,
+                        .charId = charId
+                    },
+                    .type = Event::Connect
+                };
+                mEventQueue.push(e);
+                return true;
+            }
+            case Event::Disconnect:
+            {
+                sf::Uint8 gameId = 0;
+                sf::Uint8 charId = 0;
+                if(!(packet >> gameId >> charId)) return false;
+                Event e =
+                {
+                    .disconnect = {
+                        .sender = sender,
+                        .gameId = gameId,
+                        .charId = charId
+                    },
+                    .type = Event::Disconnect
+                };
+                mEventQueue.push(e);
+                return true;
+            }
+            default: return false;
         }
     }
 };
