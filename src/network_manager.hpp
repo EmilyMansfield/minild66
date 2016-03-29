@@ -12,6 +12,8 @@
 #include <cerrno>
 #include <cstring>
 
+#include "game_container.hpp"
+
 // Should probably just define a new stream?
 #define servout (std::cout << "[SERVER] ")
 #define clntout (std::cout << "[CLIENT] ")
@@ -44,6 +46,7 @@ public:
             sf::Uint16 port;
             sf::Uint16 gameId; // Game connecting to
             sf::Uint8 charId; // Which character slot they are
+            GameContainer::Team team; // Which team they were assigned to
         };
         struct DisconnectEvent
         {
@@ -58,7 +61,12 @@ public:
             sf::Uint16 port;
             sf::Uint16 gameId;
         };
-
+        struct MoveEvent
+        {
+            sf::IpAddress sender;
+            sf::Uint16 port;
+            sf::Vector2f target;
+        };
         enum EventType {
             Nop,        // No request
             Connect,    // A player has connected
@@ -112,6 +120,7 @@ public:
     // Wait for an incoming connect and parse it as an event. If it
     // was a valid event, add it to the event queue and return true
     bool waitEvent();
+
 };
 
 #endif /* NETWORK_MANAGER_HPP */

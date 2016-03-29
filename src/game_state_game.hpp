@@ -11,33 +11,33 @@
 #include "constants.hpp"
 #include "character.hpp"
 #include "pathfinding_helper.hpp"
+#include "game_container.hpp"
 
 class GameStateGame : public GameState
 {
 private:
-    GameMap* map;
     sf::View view;
-    Character playerCharacter;
+    std::shared_ptr<GameContainer> game;
+    GameContainer::CharWrapper* client;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
 public:
     GameStateGame(std::shared_ptr<GameState>& state,
             std::shared_ptr<GameState>& prevState,
+            std::shared_ptr<GameContainer> game,
             EntityManager* mgr) :
-        GameState(state, prevState, mgr)
+        GameState(state, prevState, mgr), game(game)
     {
-        map = mgr->getEntity<GameMap>("gamemap_large");
         view = sf::View(sf::FloatRect(0, 0,
-            ld::widthTiles * map->tilemap.ts,
-            ld::heightTiles * map->tilemap.ts));
-        view.setCenter(sf::Vector2f(
-            map->tilemap.w * map->tilemap.ts / 2.0f,
-            map->tilemap.h * map->tilemap.ts / 2.0f));
+            ld::widthTiles * game->map->tilemap.ts,
+            ld::heightTiles * game->map->tilemap.ts));
 
-        sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
-        playerCharacter = *mgr->getEntity<Character>("character_fighter");
-        playerCharacter.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
+        // Get a pointer to the client's character
+        client = game->getClient();
+
+        // Centre the view on the client
+        view.setCenter((float)game->map->tilemap.ts * client->c.pfHelper.pos);
     }
 
     virtual void handleEvent(const sf::Event& event,
@@ -49,8 +49,11 @@ public:
     {
         target.clear(sf::Color::Green);
         target.setView(view);
-        target.draw(map->tilemap, states);
-        target.draw(playerCharacter);
+        target.draw(game->map->tilemap, states);
+        for(auto& ch : game->characters)
+        {
+            target.draw(ch.second.c);
+        }
     }
 };
 

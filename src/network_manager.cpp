@@ -78,7 +78,8 @@ bool NetworkManager::connectToServer(const sf::IpAddress &remoteAddress,
         .sender = mIp,
         .port = mPort,
         .gameId = gameId,
-        .charId = 0 // Allocated by server
+        .charId = 0, // Allocated by server
+        .team = GameContainer::Team::None // Allocated by server
     };
     e.type = NetworkManager::Event::Connect;
     if(send(e, remoteAddress, remotePort) != sf::Socket::Done)
@@ -147,7 +148,8 @@ sf::Socket::Status NetworkManager::send(const Event& event,
             packet << event.connect.sender.toInteger()
                    << event.connect.port
                    << event.connect.gameId
-                   << event.connect.charId;
+                   << event.connect.charId
+                   << static_cast<sf::Uint8>(event.connect.team);
             break;
         case Event::Disconnect:
             packet << event.disconnect.sender.toInteger()
@@ -254,13 +256,15 @@ bool NetworkManager::waitEvent()
         {
             sf::Uint16 gameId = 0;
             sf::Uint8 charId = 0;
-            if(!(packet >> gameId >> charId)) return false;
+            sf::Uint8 team = 0;
+            if(!(packet >> gameId >> charId >> team)) return false;
             Event e;
             e.connect = {
                .sender = sf::IpAddress(eventIp),
                .port = eventPort,
                .gameId = gameId,
-               .charId = charId
+               .charId = charId,
+               .team = static_cast<GameContainer::Team>(team)
             };
             e.type = Event::Connect;
             mEventQueue.push(e);

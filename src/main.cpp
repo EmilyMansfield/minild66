@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
                     ///////////////////////////////////////////////////
                     case NetworkManager::Event::Connect:
                     {
-                        auto e = netEvent.connect;
+                        auto& e = netEvent.connect;
                         if(connectedClients.count(e.sender) > 0)
                         {
                             servout << e.sender.toString() << " is already connected" << std::endl;
@@ -120,7 +120,8 @@ int main(int argc, char* argv[])
                             GameContainer& game = games[e.port];
                             // Attempt to add to a team
                             // TODO: Add team choosing
-                            if(game.add("character_fighter", GameContainer::Team::Any, &entityManager))
+                            sf::Uint8 charId = 255;
+                            if(game.add("character_fighter", GameContainer::Team::Any, &entityManager, charId))
                             {
                                 // Added to the team, send a success
                                 // message to connected clients
@@ -131,11 +132,12 @@ int main(int argc, char* argv[])
                                     .ip = e.sender,
                                     .port = e.port,
                                     .gameId = e.gameId,
-                                    .charId = e.charId
+                                    .charId = charId
                                 };
                                 // TODO: Send to clients on a need-to-know basis
                                 for(auto c : connectedClients)
                                 {
+                                    e.team = game.characters[charId].team;
                                     networkManager.send(netEvent, c.second.ip, c.second.port);
                                 }
                             }
@@ -273,7 +275,16 @@ int main(int argc, char* argv[])
                         {
                             hasConnectedToServer = true;
                             clntout << "\tThat's me, changing game state" << std::endl;
-                            state.reset(new GameStateGame(state, state, &entityManager));
+                            clntout << "\tAdded to team " << static_cast<int>(e.team) << std::endl;
+                            // Make a new GameContainer
+                            std::shared_ptr<GameContainer> game(new GameContainer(
+                                    entityManager.getEntity<GameMap>("gamemap_large"),
+                                    e.charId));
+                            // Add the client to the game, with the
+                            // position and team as given by the server
+                            game->add("character_fighter", e.team, &entityManager, e.charId);
+                            // TODO: Add other players
+                            state.reset(new GameStateGame(state, state, game, &entityManager));
                         }
                         break;
                     }

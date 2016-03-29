@@ -1,7 +1,7 @@
 #ifndef GAME_CONTAINER_HPP
 #define GAME_CONTAINER_HPP
 
-#include <vector>
+#include <map>
 #include <memory>
 #include <SFML/System.hpp>
 #include <iostream>
@@ -49,29 +49,43 @@ public:
             team(team)
         {
         }
+
+        CharWrapper() {}
     };
 
-    GameMap* gamemap;
-    std::vector<CharWrapper> characters;
+    GameMap* map;
+    std::map<sf::Uint8, CharWrapper> characters;
+    sf::Uint8 client;
 
     GameContainer() {}
+    GameContainer(GameMap* map, sf::Uint8 client) :
+        map(map),
+        client(client)
+    {}
+
+    // Return a pointer to the client's character
+    CharWrapper* getClient()
+    {
+        return &characters.at(client);
+    }
 
     // Add a character to the given team, if possible
     // Automatically allocate to the team with the fewest players if
-    // team is set to Any
-    bool add(const std::string& characterId, Team team, EntityManager* mgr)
+    // team is set to Any. charId should be set to 255 on the server,
+    // otherwise it should be set to what the server told us
+    bool add(const std::string& characterId, Team team, EntityManager* mgr, sf::Uint8& charId)
     {
         Team assignedTeam = Team::None;
 
         // Count team members
         sf::Uint8 team1Count = 0;
         sf::Uint8 team2Count = 0;
-        for(int i = 0; i < characters.size(); ++i)
+        for(auto& ch : characters)
         {
-            CharWrapper* c = &characters[i];
-            if(c->team == Team::One) ++team1Count;
-            else if(c->team == Team::Two) ++team2Count;
+            if(ch.second.team == Team::One) ++team1Count;
+            else if(ch.second.team == Team::Two) ++team2Count;
         }
+
         // If both are available and desired, pick the one with the
         // fewest players
         if((team1Count < playersPerTeam || team2Count < playersPerTeam) && team == Team::Any)
@@ -87,8 +101,19 @@ public:
             assignedTeam = Team::Two;
         }
         if(assignedTeam == Team::None) return false;
-        // Add the character to the team
-        characters.push_back(CharWrapper(characterId, team, mgr));
+
+        // If on the server, add to the next available slot
+        if(charId == 255 || characters.count(charId) > 0)
+            charId = characters.size();
+
+        CharWrapper character(characterId, assignedTeam, mgr);
+        // Calculate their starting position
+        // TODO: Do this with proper spawns
+        sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
+        character.c.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
+        character.c.setPos(startPos);
+        characters[charId] = character;
+
         return true;
     }
 };

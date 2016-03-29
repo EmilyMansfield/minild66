@@ -9,8 +9,10 @@ void GameStateGame::pan(const sf::Vector2f& dir, float dt, const sf::RenderWindo
 {
     // Normalise direction vector
     const sf::Vector2f nDir = dir / vecmath::norm<float>(dir);
+
     // Camera panning speed
-    float camPan = ld::cameraPanSpeed * map->tilemap.ts * dt;
+    float camPan = ld::cameraPanSpeed * game->map->tilemap.ts * dt;
+
     // Lambda and constants for shorthand
     auto windowPos = [&window](int x, int y)
     {
@@ -18,14 +20,15 @@ void GameStateGame::pan(const sf::Vector2f& dir, float dt, const sf::RenderWindo
     };
     const unsigned int& w = ld::width;
     const unsigned int& h = ld::height;
+
     // Camera can only move if it stays within the world bounds
     if((nDir.x < 0 && windowPos(nDir.x*camPan, h/2).x > 0) ||
-            (nDir.x > 0 && windowPos(w+nDir.x*camPan, h/2).x < map->tilemap.w * map->tilemap.ts))
+            (nDir.x > 0 && windowPos(w+nDir.x*camPan, h/2).x < game->map->tilemap.w * game->map->tilemap.ts))
     {
         view.move(nDir.x * camPan, 0.0f);
     }
     if((nDir.y < 0 && windowPos(w/2, nDir.y*camPan).y > 0) ||
-            (nDir.y > 0 && windowPos(w/2, h+nDir.y*camPan).y < map->tilemap.h * map->tilemap.ts))
+            (nDir.y > 0 && windowPos(w/2, h+nDir.y*camPan).y < game->map->tilemap.h * game->map->tilemap.ts))
     {
         view.move(0.0f, nDir.y * camPan);
     }
@@ -37,10 +40,10 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
     if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
     {
         // Set the pathfinding target
-        playerCharacter.pfHelper.setTarget(
+        client->c.pfHelper.setTarget(
             window.mapPixelToCoords(sf::Vector2i(
                 event.mouseButton.x,
-                event.mouseButton.y)) / (float)map->tilemap.ts);
+                event.mouseButton.y)) / (float)game->map->tilemap.ts);
     }
 }
 
@@ -90,6 +93,9 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 
 void GameStateGame::update(float dt)
 {
-    playerCharacter.update(dt);
+    for(auto& ch : game->characters)
+    {
+        ch.second.c.update(dt);
+    }
 }
 
