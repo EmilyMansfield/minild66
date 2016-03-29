@@ -22,17 +22,20 @@ public:
     public:
         struct NopEvent {
             sf::IpAddress sender;
+            sf::Uint16 port;
         };
         struct ConnectEvent
         {
             sf::IpAddress sender;
-            sf::Uint8 gameId; // Game connecting to
+            sf::Uint16 port;
+            sf::Uint16 gameId; // Game connecting to
             sf::Uint8 charId; // Which character slot they are
         };
         struct DisconnectEvent
         {
             sf::IpAddress sender;
-            sf::Uint8 gameId; // Game they were connected to
+            sf::Uint16 port;
+            sf::Uint16 gameId; // Game they were connected to
             sf::Uint8 charId; // Which slot they were in
         };
 
@@ -50,6 +53,8 @@ public:
             ConnectEvent        connect;
             DisconnectEvent     disconnect;
         };
+
+        Event() {}
     };
 
 private:
@@ -68,6 +73,33 @@ public:
             throw std::runtime_error("Failed to open socket on port "
                 + std::to_string(mPort));
         }
+    }
+
+    // Construct a packet from an event and send it
+    void send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort)
+    {
+        sf::Packet packet;
+        switch(event.type)
+        {
+            case Event::Nop:
+                packet << event.nop.sender.toInteger()
+                       << event.nop.port;
+                break;
+            case Event::Connect:
+                packet << event.connect.sender.toInteger()
+                       << event.connect.port
+                       << event.connect.gameId
+                       << event.connect.charId;
+                break;
+            case Event::Disconnect:
+                packet << event.disconnect.sender.toInteger()
+                       << event.disconnect.port
+                       << event.disconnect.gameId
+                       << event.disconnect.charId;
+                break;
+            default: return;
+        }
+        mSocket.send(packet, remoteAddress, remotePort);
     }
 
     // Take the next event out of the event queue
@@ -101,53 +133,64 @@ public:
         }
         auto type = static_cast<Event::EventType>(t);
 
+        // Extract ip
+        sf::Uint32 eventIp = 0;
+        if(!(packet >> eventIp))
+        {
+            return false;
+        }
+
+        // Extract port
+        sf::Uint16 eventPort = 0;
+        if(!(packet >> eventPort))
+        {
+            return false;
+        }
+
         // Depending on the type of the packet, we extract different
         // data
         switch(type)
         {
             case Event::Nop:
             {
-                Event e =
-                {
-                    .nop = {
-                        .sender = sender
-                    },
-                    .type = Event::Nop
+                Event e;
+                e.nop = {
+                    .sender = sf::IpAddress(eventIp),
+                    .port = eventPort
                 };
+                e.type = Event::Nop;
                 mEventQueue.push(e);
                 return true;
             }
             case Event::Connect:
             {
-                sf::Uint8 gameId = 0;
+                sf::Uint16 gameId = 0;
                 sf::Uint8 charId = 0;
                 if(!(packet >> gameId >> charId)) return false;
-                Event e =
-                {
-                    .connect = {
-                        .sender = sender,
-                        .gameId = gameId,
-                        .charId = charId
-                    },
-                    .type = Event::Connect
+                Event e;
+                e.connect = {
+                   .sender = sf::IpAddress(eventIp),
+                   .port = eventPort,
+                   .gameId = gameId,
+                   .charId = charId
                 };
+                e.type = Event::Connect;
                 mEventQueue.push(e);
                 return true;
             }
             case Event::Disconnect:
             {
-                sf::Uint8 gameId = 0;
+                sf::Uint16 gameId = 0;
                 sf::Uint8 charId = 0;
                 if(!(packet >> gameId >> charId)) return false;
-                Event e =
-                {
-                    .disconnect = {
-                        .sender = sender,
-                        .gameId = gameId,
-                        .charId = charId
-                    },
-                    .type = Event::Disconnect
+                Event e;
+                e.disconnect = {
+                   .sender = sf::IpAddress(eventIp),
+                   .port = eventPort,
+                   .gameId = gameId,
+                   .charId = charId
                 };
+                e.type = Event::Disconnect;
                 mEventQueue.push(e);
                 return true;
             }

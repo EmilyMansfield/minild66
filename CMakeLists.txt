@@ -9,7 +9,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 include_directories(src/include)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-comment")
-set(PROJECT_LINK_LIBS m JsonBox)
+set(PROJECT_LINK_LIBS m JsonBox pthread)
 
 set(EXECUTABLE_NAME "minild66")
 add_executable(${EXECUTABLE_NAME} ${SOURCES})

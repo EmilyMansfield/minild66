@@ -1,8 +1,11 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
+#include <SFML/System.hpp>
 #include <iostream>
 #include <memory>
+#include <thread>
+#include <vector>
 
 #include "constants.hpp"
 #include "game_state.hpp"
@@ -11,9 +14,25 @@
 #include "entity_manager.hpp"
 #include "network_manager.hpp"
 
+// Should probably just define a new stream?
+#define servout (std::cout << "[SERVER] ")
+
 class Tileset;
 class GameMap;
 class Character;
+
+// Easiest way to ensure a otherwise infinite looping function
+// will halt is to use a pointer as a kill-switch
+void pollNetworkEvents(NetworkManager* nmgr, bool* kill)
+{
+    // Run until killed, accepting connections and parsing them
+    // as network events. The events are available from nmgr
+    // using pollEvent, which should be called in the main thread
+    while(!*kill)
+    {
+        nmgr->waitEvent();
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -35,50 +54,111 @@ int main(int argc, char* argv[])
 
     NetworkManager networkManager;
 
+    // Open a thread for listening to incoming connections
+    bool killPollNetworkThread = false;
+    std::thread pollNetworkThread(pollNetworkEvents, &networkManager, &killPollNetworkThread);
+
     //////////////////////////////////////////////////////////////////
     // SERVER
     //////////////////////////////////////////////////////////////////
     if(ld::isServer)
     {
-// TODO TEST CODE REMOVE
-        sf::UdpSocket socket;
-        socket.bind(49518);
-
         bool running = true;
+        auto ipCmp = [](const sf::IpAddress& a, const sf::IpAddress& b)
+        {
+            return a.toInteger() < b.toInteger();
+        };
+        struct ClientInfo {
+            sf::IpAddress ip;
+            sf::Uint16 port;
+            sf::Uint16 gameId;
+            sf::Uint8 charId;
+        };
+        std::map<sf::IpAddress, ClientInfo, decltype(ipCmp)> connectedClients(ipCmp);
+
         while(running)
         {
-            sf::Packet packet;
-            sf::IpAddress sender;
-            unsigned short port;
-            
-            // Wait for an incoming connection
-            socket.receive(packet, sender, port);
-            std::string msg;
-            packet >> msg;
-            std::cout << sender.toString() << " said: " << msg << std::endl;
+            NetworkManager::Event netEvent;
+            while(networkManager.pollEvent(netEvent))
+            {
+                switch(netEvent.type)
+                {
+                    default:
+                    case NetworkManager::Event::Nop:
+                    {
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // CONNECT
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::Connect:
+                    {
+                        auto e = netEvent.connect;
+                        if(connectedClients.count(e.sender) > 0)
+                        {
+                            servout << e.sender.toString() << " is already connected" << std::endl;
+                        }
+                        else
+                        {
+                            servout << e.sender.toString() << " has connected" << std::endl;
+                            // Add to the list of connected clients
+                            connectedClients[e.sender] = (ClientInfo){
+                                .ip = e.sender,
+                                .port = e.port,
+                                .gameId = e.gameId,
+                                .charId = e.charId
+                            };
+                            // Broadcast this to all connected clients
+                            // TODO: Send to clients on a need-to-know basis
+                            for(auto c : connectedClients)
+                            {
+                                networkManager.send(netEvent, c.second.ip, c.second.port);
+                            }
+                        }
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // DISCONNECT
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::Disconnect:
+                    {
+                        // Terribly unsecure way of killing server gracefully
+                        if(netEvent.disconnect.gameId == 65535 &&
+                            netEvent.disconnect.charId == 255)
+                        {
+                            running = false;
+                        }
+                        // Same as a connect event but in reverse
+                        auto e = netEvent.disconnect;
+                        if(connectedClients.count(e.sender) == 0)
+                        {
+                            servout << e.sender.toString() << " is not connected" << std::endl;
+                        }
+                        // TODO: This section should also be triggered if a client has not been
+                        // heard from for a certain amount of time
+                        else
+                        {
+                            servout << e.sender.toString() << " has disconnected" << std::endl;
+                            // Delete from the set of connected clients
+                            connectedClients.erase(e.sender);
+                            // Broacast
+                            for(auto c : connectedClients)
+                            {
+                                networkManager.send(netEvent, c.second.ip, c.second.port);
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
         }
-//////////////////////////////
     }
     //////////////////////////////////////////////////////////////////
     // CLIENT
     //////////////////////////////////////////////////////////////////
     else
     {
-// TODO TEST CODE REMOVE
-        // Networking
-        sf::UdpSocket socket;
-        socket.bind(49519);
-
-        // Send test message
-        for(;;)
-        {
-            sf::Packet packet;
-            packet << "hello, world";
-            socket.send(packet, sf::IpAddress("192.168.0.43"), 49518);
-            sf::sleep(sf::seconds(0.1f));            
-        }
-////////////////////////////////
-
         // Create the window
         sf::RenderWindow window(sf::VideoMode(ld::width, ld::height), ld::title,
                 sf::Style::Titlebar | sf::Style::Close);
@@ -119,6 +199,19 @@ int main(int argc, char* argv[])
                 }
                 if(state != nullptr) state->handleEvent(event, window);
             }
+            // Handle network events
+            NetworkManager::Event netEvent;
+            while(networkManager.pollEvent(netEvent))
+            {
+                switch(netEvent.type)
+                {
+                    default:
+                    case NetworkManager::Event::Nop:
+                    {
+                        break;
+                    }
+                }
+            }
 
             if(state != nullptr)
             {
@@ -136,6 +229,10 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    // Kill the network thread and join
+    killPollNetworkThread = true;
+    pollNetworkThread.join();
 
     return 0;
 }
