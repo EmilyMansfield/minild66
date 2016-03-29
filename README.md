@@ -17,7 +17,8 @@ A MOBA is an RTS, right?
   - Map can be panned using the mouse, and stays in bounds
   - Characters can be drawn along with animations
   - Started to create navmesh system
-    - Convex polygon handling with interior points, intersection, and subtraction
+    - Convex polygon handling with interior points, intersection, and
+      subtraction
 
 ###Day 3
   - *Mostly* finished navmesh algorithms
@@ -30,3 +31,17 @@ A MOBA is an RTS, right?
   - Started to add a network protocol using UDP. Aiming to finish this before
     moving on, since multiple on screen characters are required to do much of
     anything else
+
+###Day 4
+  - Started to add a GameContainer to encapsulate each game
+  - Added game creation to the server using GameContainer
+  - Clients can now join games if they have room
+    - Details are given in `config.json`
+  - Game state wraps a Game Container, with the client controlling one character
+    - TODO Still needs to be synced with other clients
+
+With only 3 days left it may look like there's a lot left to do (and frankly,
+there is), but at this point the rendering and network engine are mostly
+complete. What remains is to add gameplay and ensure that client/server sync
+correctly with correct packet-loss handling. Which doesn't quite sound like as
+much! Maybe I'll finish on time after all.
