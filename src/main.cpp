@@ -178,25 +178,24 @@ int main(int argc, char* argv[])
         std::shared_ptr<GameState> state;
 
         // Load initial game state
-        //state.reset(new GameStateTitle(state, state, &entityManager));
-        state.reset(new GameStateGame(state, state, &entityManager));
+        state.reset(new GameStateTitle(state, state, &entityManager));
+        // state.reset(new GameStateGame(state, state, &entityManager));
 
         // Frame time
         sf::Clock clock;
 
         // Attempt to connect to server
-        NetworkManager::Event connectEvent;
-        connectEvent.connect = {
-            .sender = sf::IpAddress::getLocalAddress(),
-            .port = networkManager.getPort(),
-            .gameId = 0, // These are ignored, since the server allocates them
-            .charId = 0
-        };
-        connectEvent.type = NetworkManager::Event::Connect;
-        if(networkManager.send(connectEvent, sf::IpAddress("192.168.0.43"), 49518) != sf::Socket::Done)
+        // TODO: Make this more robust
+        auto cts_client = configFile["client"].getObject();
+        auto cts_target = cts_client["target"].getObject();
+        if(!networkManager.connectToServer(
+            cts_target["address"].getString(),
+            cts_target["port"].getInteger(),
+            cts_target["game"].getInteger()))
         {
-            clntout << "Failed to send connect message" << std::endl;
+            window.close();
         }
+        bool hasConnectedToServer = false;
 
         // Game loop
         while(window.isOpen())
@@ -228,6 +227,12 @@ int main(int argc, char* argv[])
                     {
                         auto e = netEvent.connect;
                         clntout << e.sender.toString() << " has connected" << std::endl;
+                        if(!hasConnectedToServer && e.sender == networkManager.getIp())
+                        {
+                            hasConnectedToServer = true;
+                            clntout << "\tThat's me, changing game state" << std::endl;
+                            state.reset(new GameStateGame(state, state, &entityManager));
+                        }
                         break;
                     }
                     case NetworkManager::Event::Disconnect:

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cerrno>
 #include <cstring>
+#include <sstream>
 #include "network_manager.hpp"
 #include "constants.hpp"
 
@@ -37,13 +38,76 @@ NetworkManager::~NetworkManager()
     mSocket.unbind();
 }
 
+bool NetworkManager::connectToServer(const sf::IpAddress &remoteAddress,
+    unsigned short remotePort,
+    sf::Uint16 gameId)
+{
+    // Bail if server is connecting to server
+    if(ld::isServer) return false;
+
+    // Work out if this is the remote address is WAN or LAN
+    // This is not great and probably doesn't actually work,
+    // it just assumes an IP is local iff it's in reserved in RFC1918.
+    // Needed because the address is used in events to identify the host.
+    // Note that this does not support a situation where people are connected
+    // to the same server with some on LAN and some on WAN, but this solution
+    // is simple and that's all I care about for now
+    // TODO: Support simultaneous LAN & WAN connections
+    std::string ipStr = remoteAddress.toString();
+    for(int i = 0; i < ipStr.size(); ++i)
+    {
+        if(ipStr[i] == '.') ipStr[i] = ' ';
+    }
+    std::istringstream ipStrIs(ipStr);
+    int blocks[4] = {0,0,0,0};
+    ipStrIs >> blocks[0] >> blocks[1] >> blocks[2] >> blocks[3];
+    if(remoteAddress == sf::IpAddress::LocalHost ||
+        blocks[0] == 10 ||
+        (blocks[0] == 172 && 16 <= blocks[1] && blocks[1] <= 31) ||
+        (blocks[0] == 192 && blocks[1] == 168))
+    {
+        mIp = sf::IpAddress::getLocalAddress();
+    }
+    else
+    {
+        mIp = sf::IpAddress::getPublicAddress();
+    }
+
+    Event e;
+    e.connect = {
+        .sender = mIp,
+        .port = mPort,
+        .gameId = gameId,
+        .charId = 0 // Allocated by server
+    };
+    e.type = NetworkManager::Event::Connect;
+    if(send(e, remoteAddress, 49518) != sf::Socket::Done)
+    {
+        clntout << "Failed to send connect message to "
+            << remoteAddress.toString() << " on port "
+            << remotePort << std::endl;
+        clntout << "\t" << std::strerror(errno) << std::endl;
+
+        return false;
+    }
+
+    return true;
+}
+
 unsigned short NetworkManager::getPort() const
 {
     return mPort;
 }
 
+const sf::IpAddress& NetworkManager::getIp() const
+{
+    return mIp;
+}
+
 // Construct a packet from an event and send it
-sf::Socket::Status NetworkManager::send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort)
+sf::Socket::Status NetworkManager::send(const Event& event,
+    const sf::IpAddress& remoteAddress,
+    unsigned short remotePort)
 {
     sf::Packet packet;
     packet << static_cast<sf::Uint16>(event.type);

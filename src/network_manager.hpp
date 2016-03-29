@@ -78,9 +78,17 @@ public:
     ~NetworkManager();
 
     unsigned short getPort() const;
+    const sf::IpAddress& getIp() const;
+
+    // Connect to a server. Does nothing on a client
+    bool connectToServer(const sf::IpAddress &remoteAddress,
+        unsigned short remotePort,
+        sf::Uint16 gameId);
 
     // Construct a packet from an event and send it
-    sf::Socket::Status send(const Event& event, const sf::IpAddress& remoteAddress, unsigned remotePort);
+    sf::Socket::Status send(const Event& event,
+        const sf::IpAddress& remoteAddress,
+        unsigned short remotePort);
 
     // Take the next event out of the event queue
     bool pollEvent(Event& event);

@@ -3,6 +3,11 @@
 		"port": 49518
 	},
 	"client": {
-		"port": 49519
+		"port": 49519,
+		"target": {
+			"address": "192.168.0.43",
+			"port": 49518,
+			"game": 0
+		}
 	}
 }
