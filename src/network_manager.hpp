@@ -37,12 +37,10 @@ public:
     {
     public:
         struct NopEvent {
-            sf::IpAddress sender;
-            sf::Uint16 port;
         };
         struct ConnectEvent
         {
-            sf::IpAddress sender;
+            sf::IpAddress ip;
             sf::Uint16 port;
             sf::Uint16 gameId; // Game connecting to
             sf::Uint8 charId; // Which character slot they are
@@ -50,21 +48,17 @@ public:
         };
         struct DisconnectEvent
         {
-            sf::IpAddress sender;
+            sf::IpAddress ip;
             sf::Uint16 port;
             sf::Uint16 gameId; // Game they were connected to
             sf::Uint8 charId; // Which slot they were in
         };
         struct GameFullEvent
         {
-            sf::IpAddress sender;
-            sf::Uint16 port;
             sf::Uint16 gameId;
         };
         struct MoveEvent
         {
-            sf::IpAddress sender;
-            sf::Uint16 port;
             sf::Vector2f target;
         };
         enum EventType {
@@ -107,7 +101,7 @@ public:
 
     // Disconnect from server. Does nothing on a client or
     // if not connected to a server
-    bool disconnectFromServer();
+    bool disconnectFromServer(sf::Uint16 gameId, sf::Uint8 charId);
 
     // Construct a packet from an event and send it
     sf::Socket::Status send(const Event& event,

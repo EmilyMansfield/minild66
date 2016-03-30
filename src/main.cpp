@@ -106,18 +106,18 @@ int main(int argc, char* argv[])
                     case NetworkManager::Event::Connect:
                     {
                         auto& e = netEvent.connect;
-                        if(connectedClients.count(e.sender) > 0)
+                        if(connectedClients.count(e.ip) > 0)
                         {
-                            servout << e.sender.toString() << " is already connected" << std::endl;
+                            servout << e.ip.toString() << " is already connected" << std::endl;
                         }
                         else
                         {
                             // If the game doesn't exist yet, make it
                             if(games.count(e.gameId) == 0)
                             {
-                                games[e.port] = GameContainer();
+                                games[e.gameId] = GameContainer();
                             }
-                            GameContainer& game = games[e.port];
+                            GameContainer& game = games[e.gameId];
                             // Attempt to add to a team
                             // TODO: Add team choosing
                             sf::Uint8 charId = 255;
@@ -125,19 +125,27 @@ int main(int argc, char* argv[])
                             {
                                 // Added to the team, send a success
                                 // message to connected clients
-                                servout << e.sender.toString() << " has connected to game "
+                                servout << e.ip.toString() << " has connected to game "
                                     << e.gameId << std::endl;
                                 // Add to the list of connected clients
-                                connectedClients[e.sender] = (ClientInfo){
-                                    .ip = e.sender,
+                                connectedClients[e.ip] = (ClientInfo){
+                                    .ip = e.ip,
                                     .port = e.port,
                                     .gameId = e.gameId,
                                     .charId = charId
                                 };
-                                // TODO: Send to clients on a need-to-know basis
+                                // Send an accept to the client who tried
+                                // to connect
+                                e.team = game.characters[charId].team;
+                                networkManager.send(netEvent, e.ip, e.port);
+                                // Send to other clients who are in the same game
+                                // Ip and port are not needed by other
+                                // clients, and so are masked
+                                e.ip = sf::IpAddress(0, 0, 0, 0);
+                                e.port = 0;
                                 for(auto c : connectedClients)
                                 {
-                                    e.team = game.characters[charId].team;
+                                    if(c.second.gameId != e.gameId) continue;
                                     networkManager.send(netEvent, c.second.ip, c.second.port);
                                 }
                             }
@@ -149,14 +157,12 @@ int main(int argc, char* argv[])
                                 // it's probably time to refactor
                                 NetworkManager::Event response;
                                 response.gameFull = {
-                                    .sender = e.sender,
-                                    .port = e.port,
                                     .gameId = e.gameId
                                 };
                                 response.type = NetworkManager::Event::GameFull;
                                 servout << "Game " << e.gameId
                                     << " is full, rejecting with message" << std::endl;
-                                networkManager.send(response, e.sender, e.port);
+                                networkManager.send(response, e.ip, e.port);
                             }
                         }
                         break;
@@ -173,21 +179,24 @@ int main(int argc, char* argv[])
                             running = false;
                         }
                         // Same as a connect event but in reverse
-                        auto e = netEvent.disconnect;
-                        if(connectedClients.count(e.sender) == 0)
+                        auto& e = netEvent.disconnect;
+                        if(connectedClients.count(e.ip) == 0)
                         {
-                            servout << e.sender.toString() << " is not connected" << std::endl;
+                            servout << e.ip.toString() << " is not connected" << std::endl;
                         }
                         // TODO: This section should also be triggered if a client has not been
                         // heard from for a certain amount of time
-                        else
+                        else if(connectedClients[e.ip].gameId == e.gameId && connectedClients[e.ip].charId == e.charId)
                         {
-                            servout << e.sender.toString() << " has disconnected" << std::endl;
+                            servout << e.ip.toString() << " has disconnected" << std::endl;
                             // Delete from the set of connected clients
-                            connectedClients.erase(e.sender);
+                            connectedClients.erase(e.ip);
                             // Broacast
+                            e.ip = sf::IpAddress(0, 0, 0, 0);
+                            e.port = 0;
                             for(auto c : connectedClients)
                             {
+                                if(c.second.gameId != e.gameId) continue;
                                 networkManager.send(netEvent, c.second.ip, c.second.port);
                             }
                         }
@@ -223,10 +232,12 @@ int main(int argc, char* argv[])
 
         // Load initial game state
         state.reset(new GameStateTitle(state, state, &entityManager));
-        // state.reset(new GameStateGame(state, state, &entityManager));
 
         // Frame time
         sf::Clock clock;
+
+        // Game the client is playing in
+        std::shared_ptr<GameContainer> game;
 
         // Attempt to connect to server
         // TODO: Make this more robust
@@ -267,33 +278,52 @@ int main(int argc, char* argv[])
                     {
                         break;
                     }
+                    ///////////////////////////////////////////////////
+                    // CONNECT
+                    ///////////////////////////////////////////////////
                     case NetworkManager::Event::Connect:
                     {
                         auto e = netEvent.connect;
-                        clntout << e.sender.toString() << " has connected" << std::endl;
-                        if(!hasConnectedToServer && e.sender == networkManager.getIp())
+                        clntout << "A client has connected" << std::endl;
+                        // If client has not yet connected and this is addressed
+                        // to the client
+                        if(!hasConnectedToServer && e.ip == networkManager.getIp())
                         {
                             hasConnectedToServer = true;
-                            clntout << "\tThat's me, changing game state" << std::endl;
+                            clntout << "\tIt was me, changing game state" << std::endl;
                             clntout << "\tAdded to team " << static_cast<int>(e.team) << std::endl;
                             // Make a new GameContainer
-                            std::shared_ptr<GameContainer> game(new GameContainer(
+                            game = std::shared_ptr<GameContainer>(new GameContainer(
                                     entityManager.getEntity<GameMap>("gamemap_large"),
-                                    e.charId));
+                                    e.gameId, e.charId));
                             // Add the client to the game, with the
                             // position and team as given by the server
                             game->add("character_fighter", e.team, &entityManager, e.charId);
                             // TODO: Add other players
                             state.reset(new GameStateGame(state, state, game, &entityManager));
                         }
+                        // Otherwise if this concerns the game the client
+                        // is connected to
+                        else if(e.gameId == game->gameId)
+                        {
+                            // Server says a new player has joined the game
+                            clntout << "\tConnected to my game on team " << static_cast<int>(e.team) << std::endl;
+                            game->add("character_fighter", e.team, &entityManager, e.charId);
+                        }
                         break;
                     }
+                    ///////////////////////////////////////////////////
+                    // DISCONNECT
+                    ///////////////////////////////////////////////////
                     case NetworkManager::Event::Disconnect:
                     {
                         auto e = netEvent.disconnect;
-                        clntout << e.sender.toString() << " has disconnected" << std::endl;
+                        clntout << e.ip.toString() << " has disconnected" << std::endl;
                         break;
                     }
+                    ///////////////////////////////////////////////////
+                    // GAME FULL
+                    ///////////////////////////////////////////////////
                     case NetworkManager::Event::GameFull:
                     {
                         auto e = netEvent.gameFull;
@@ -319,10 +349,13 @@ int main(int argc, char* argv[])
                 window.close();
             }
         }
-    }
 
-    // Attempt to disconnect from server
-    networkManager.disconnectFromServer();
+        // Attempt to disconnect from server
+        if(game != nullptr)
+        {
+            networkManager.disconnectFromServer(game->gameId, game->client);
+        }
+    }
 
     // Kill the network thread and join
     killPollNetworkThread = true;

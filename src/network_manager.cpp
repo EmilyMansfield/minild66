@@ -75,7 +75,7 @@ bool NetworkManager::connectToServer(const sf::IpAddress &remoteAddress,
 
     Event e;
     e.connect = {
-        .sender = mIp,
+        .ip = mIp,
         .port = mPort,
         .gameId = gameId,
         .charId = 0, // Allocated by server
@@ -97,16 +97,14 @@ bool NetworkManager::connectToServer(const sf::IpAddress &remoteAddress,
     return true;
 }
 
-bool NetworkManager::disconnectFromServer()
+bool NetworkManager::disconnectFromServer(sf::Uint16 gameId, sf::Uint8 charId)
 {
     if(ld::isServer) return false;
 
     Event e;
     e.disconnect = {
-        .sender = mIp,
-        .port = mPort,
-        .gameId = 0,
-        .charId = 0
+        .gameId = gameId,
+        .charId = charId
     };
     e.type = NetworkManager::Event::Disconnect;
     if(send(e, mRemoteIp, mRemotePort) != sf::Socket::Done)
@@ -141,26 +139,22 @@ sf::Socket::Status NetworkManager::send(const Event& event,
     switch(event.type)
     {
         case Event::Nop:
-            packet << event.nop.sender.toInteger()
-                   << event.nop.port;
             break;
         case Event::Connect:
-            packet << event.connect.sender.toInteger()
+            packet << event.connect.ip.toInteger()
                    << event.connect.port
                    << event.connect.gameId
                    << event.connect.charId
                    << static_cast<sf::Uint8>(event.connect.team);
             break;
         case Event::Disconnect:
-            packet << event.disconnect.sender.toInteger()
+            packet << event.disconnect.ip.toInteger()
                    << event.disconnect.port
                    << event.disconnect.gameId
                    << event.disconnect.charId;
             break;
         case Event::GameFull:
-            packet << event.gameFull.sender.toInteger()
-                   << event.gameFull.port
-                   << event.gameFull.gameId;
+            packet << event.gameFull.gameId;
             break;
         default: return sf::Socket::Error;
     }
@@ -217,54 +211,32 @@ bool NetworkManager::waitEvent()
     }
     auto type = static_cast<Event::EventType>(t);
 
-    // Extract ip
-    sf::Uint32 eventIp = 0;
-    if(!(packet >> eventIp))
-    {
-        // Invalid packet
-        if(ld::isServer) servout << "Packet had invalid ip" << std::endl;
-        else             clntout << "Packet had invalid ip" << std::endl;
-        return false;
-    }
-
-    // Extract port
-    sf::Uint16 eventPort = 0;
-    if(!(packet >> eventPort))
-    {
-        // Invalid packet
-        if(ld::isServer) servout << "Packet had invalid port" << std::endl;
-        else             clntout << "Packet had invalid port" << std::endl;
-        return false;
-    }
-
-    // Depending on the type of the packet, we extract different
-    // data
+    // Depending on the type of the packet, we extract different data
     switch(type)
     {
         case Event::Nop:
         {
             Event e;
-            e.nop = {
-                .sender = sf::IpAddress(eventIp),
-                .port = eventPort
-            };
+            e.nop = {};
             e.type = Event::Nop;
             mEventQueue.push(e);
             return true;
         }
         case Event::Connect:
         {
+            sf::Uint32 ip = 0;
+            sf::Uint16 port = 0;
             sf::Uint16 gameId = 0;
             sf::Uint8 charId = 0;
             sf::Uint8 team = 0;
-            if(!(packet >> gameId >> charId >> team)) return false;
+            if(!(packet >> ip >> port >> gameId >> charId >> team)) return false;
             Event e;
             e.connect = {
-               .sender = sf::IpAddress(eventIp),
-               .port = eventPort,
-               .gameId = gameId,
-               .charId = charId,
-               .team = static_cast<GameContainer::Team>(team)
+                .ip = sf::IpAddress(ip),
+                .port = port,
+                .gameId = gameId,
+                .charId = charId,
+                .team = static_cast<GameContainer::Team>(team)
             };
             e.type = Event::Connect;
             mEventQueue.push(e);
@@ -272,15 +244,17 @@ bool NetworkManager::waitEvent()
         }
         case Event::Disconnect:
         {
+            sf::Uint32 ip = 0;
+            sf::Uint16 port = 0;
             sf::Uint16 gameId = 0;
             sf::Uint8 charId = 0;
-            if(!(packet >> gameId >> charId)) return false;
+            if(!(packet >> ip >> port >> gameId >> charId)) return false;
             Event e;
             e.disconnect = {
-               .sender = sf::IpAddress(eventIp),
-               .port = eventPort,
-               .gameId = gameId,
-               .charId = charId
+                .ip = sf::IpAddress(ip),
+                .port = port,
+                .gameId = gameId,
+                .charId = charId
             };
             e.type = Event::Disconnect;
             mEventQueue.push(e);
@@ -292,8 +266,6 @@ bool NetworkManager::waitEvent()
             if(!(packet >> gameId)) return false;
             Event e;
             e.gameFull = {
-                .sender = sf::IpAddress(eventIp),
-                .port = eventPort,
                 .gameId = gameId,
             };
             e.type = Event::GameFull;

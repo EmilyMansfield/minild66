@@ -5,6 +5,7 @@
 #include <memory>
 #include <SFML/System.hpp>
 #include <iostream>
+#include <cstdlib>
 
 #include "game_map.hpp"
 #include "character.hpp"
@@ -55,11 +56,13 @@ public:
 
     GameMap* map;
     std::map<sf::Uint8, CharWrapper> characters;
+    sf::Uint16 gameId;
     sf::Uint8 client;
 
     GameContainer() {}
-    GameContainer(GameMap* map, sf::Uint8 client) :
+    GameContainer(GameMap* map, sf::Uint16 gameId, sf::Uint8 client) :
         map(map),
+        gameId(gameId),
         client(client)
     {}
 
@@ -109,7 +112,9 @@ public:
         CharWrapper character(characterId, assignedTeam, mgr);
         // Calculate their starting position
         // TODO: Do this with proper spawns
-        sf::Vector2f startPos(map->tilemap.w / 4.0f, map->tilemap.h / 4.0f);
+        sf::Vector2f startPos(
+            map->tilemap.w * (0.1f + 0.8f * (float)(rand()) / RAND_MAX),
+            map->tilemap.h * (0.1f + 0.8f * (float)(rand()) / RAND_MAX));
         character.c.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
         character.c.setPos(startPos);
         characters[charId] = character;
