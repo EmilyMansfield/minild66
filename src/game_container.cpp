@@ -3,6 +3,7 @@
 
 #include "game_container.hpp"
 #include "entity_manager.hpp"
+#include "target_attack.hpp"
 
 bool GameContainer::add(const std::string& characterId,
 	Team team, EntityManager* mgr, sf::Uint8* charId)
@@ -56,5 +57,19 @@ void GameContainer::update(float dt)
     for(auto& ch : characters)
     {
         ch.second.c.update(dt);
+    }
+    for(auto attack : targetAttacks)
+    {
+        attack->update(dt);
+    }
+    // Shitty way of deleting finished events
+    // No time or inclination right now for a proper solution
+    for(int i = 0; i < targetAttacks.size(); ++i)
+    {
+        if(targetAttacks[i]->isDone())
+        {
+            targetAttacks.erase(targetAttacks.begin()+i);
+            --i;
+        }
     }
 }

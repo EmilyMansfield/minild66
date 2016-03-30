@@ -11,6 +11,8 @@
 #include "character.hpp"
 #include "entity_manager.hpp"
 
+class TargetAttack;
+
 class GameContainer
 {
 public:
@@ -58,6 +60,9 @@ public:
     std::map<sf::Uint8, CharWrapper> characters;
     sf::Uint16 gameId;
     sf::Uint8 client;
+
+    // Attacks being processed
+    std::vector<std::shared_ptr<TargetAttack>> targetAttacks;
 
     GameContainer() {}
     GameContainer(GameMap* map, sf::Uint16 gameId, sf::Uint8 client) :

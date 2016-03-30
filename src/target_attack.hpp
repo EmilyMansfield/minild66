@@ -32,7 +32,9 @@ private:
     const unsigned int mTriggerFrame;
     bool mIsDone;
 
-    std::function<NetworkManager::Event(const CharWrapper&, const CharWrapper&)> mFunc;
+    std::function<NetworkManager::Event(
+        const GameContainer::CharWrapper&,
+        const GameContainer::CharWrapper&)> mFunc;
     GameContainer* mGame;
 
     sf::Sprite mSprite;
@@ -41,10 +43,11 @@ private:
 
 public:
 
-    TargetAttack() {}
     TargetAttack(sf::Uint8 source, sf::Uint8 target, Tileset* tileset,
         const std::string& animation, unsigned int triggerFrame,
-        std::function<NetworkManager::Event(const CharWrapper&, const CharWrapper&)> f,
+        std::function<NetworkManager::Event(
+            const GameContainer::CharWrapper&,
+            const GameContainer::CharWrapper&)> f,
         GameContainer* game) :
         mSource(source),
         mTarget(target),
@@ -55,7 +58,7 @@ public:
         mTriggerFrame(triggerFrame),
         mIsDone(false),
         mFunc(f),
-        mGame(GameContainer)
+        mGame(game)
     {
         mSprite.setTexture(mTileset->tex);
         mAnim = &mTileset->animations[animation];
@@ -63,10 +66,9 @@ public:
         mSprite.setOrigin(mTs/2.0, mTs/2.0);
     }
 
-    void update(float dt)
+    bool update(float dt)
     {
         mAnimT += dt;
-        mSprite.setPosition(mPos);
         int frame = mAnimT * mAnim->len / mAnim->duration;
         if(frame >= mAnim->len)
         {
@@ -86,11 +88,13 @@ public:
         if(frame == mTriggerFrame)
         {
             // TODO: Trigger also if trigger frame is skipped
-            mNetEvent = mFunc(mGame->characters[source], mGame->characters[target]);
+            mNetEvent = mFunc(mGame->characters[mSource], mGame->characters[mTarget]);
         }
+        return mIsDone;
     }
 
-    void isDone() const { return mIsDone; }
+    void setPos(const sf::Vector2f& pos) { mSprite.setPosition(pos); }
+    bool isDone() const { return mIsDone; }
     NetworkManager::Event getEvent() const { return mNetEvent; }
 };
 
