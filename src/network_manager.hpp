@@ -64,12 +64,28 @@ public:
             sf::Vector2f target;
             sf::Vector2f pos;
         };
+        struct DamageEvent
+        {
+            sf::Uint16 gameId;
+            sf::Uint8 charId;
+            float hp;
+        };
+        struct AutoAttackEvent
+        {
+            sf::Uint16 gameId;
+            sf::Uint8 charId;
+            sf::Uint8 targetId;
+            bool cancel; // Attacks can be cancelled mid-animation
+        };
+
         enum EventType {
             Nop,        // No request
             Connect,    // A player has connected
             Disconnect, // A player has disconnected
             GameFull,   // No room to join a game, both teams full
             Move,       // Creature is moving
+            Damage,     // Creature has taken damage (or healed)
+            AutoAttack, // Creature is attacking (or cancelling)
             Count
         };
         EventType type;
@@ -80,6 +96,8 @@ public:
             DisconnectEvent     disconnect;
             GameFullEvent       gameFull;
             MoveEvent           move;
+            DamageEvent         damage;
+            AutoAttackEvent     autoAttack;
         };
 
         Event() {}

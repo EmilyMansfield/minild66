@@ -165,6 +165,17 @@ sf::Socket::Status NetworkManager::send(const Event& event,
                    << event.move.target
                    << event.move.pos;
             break;
+        case Event::Damage:
+            packet << event.damage.gameId
+                   << event.damage.charId
+                   << event.damage.hp;
+            break;
+        case Event::AutoAttack:
+            packet << event.autoAttack.gameId
+                   << event.autoAttack.charId
+                   << event.autoAttack.targetId
+                   << event.autoAttack.cancel;
+            break;
         default: return sf::Socket::Error;
     }
     return mSocket.send(packet, remoteAddress, remotePort);
@@ -226,15 +237,13 @@ bool NetworkManager::waitEvent()
     auto type = static_cast<Event::EventType>(t);
 
     // Depending on the type of the packet, we extract different data
+    Event e;
     switch(type)
     {
         case Event::Nop:
         {
-            Event e;
             e.nop = {};
-            e.type = Event::Nop;
-            mEventQueue.push(e);
-            return true;
+            break;
         }
         case Event::Connect:
         {
@@ -244,7 +253,6 @@ bool NetworkManager::waitEvent()
             sf::Uint8 charId = 0;
             sf::Uint8 team = 0;
             if(!(packet >> ip >> port >> gameId >> charId >> team)) return false;
-            Event e;
             e.connect = {
                 .ip = sf::IpAddress(ip),
                 .port = port,
@@ -252,9 +260,7 @@ bool NetworkManager::waitEvent()
                 .charId = charId,
                 .team = static_cast<GameContainer::Team>(team)
             };
-            e.type = Event::Connect;
-            mEventQueue.push(e);
-            return true;
+            break;
         }
         case Event::Disconnect:
         {
@@ -263,28 +269,22 @@ bool NetworkManager::waitEvent()
             sf::Uint16 gameId = 0;
             sf::Uint8 charId = 0;
             if(!(packet >> ip >> port >> gameId >> charId)) return false;
-            Event e;
             e.disconnect = {
                 .ip = sf::IpAddress(ip),
                 .port = port,
                 .gameId = gameId,
                 .charId = charId
             };
-            e.type = Event::Disconnect;
-            mEventQueue.push(e);
-            return true;
+            break;
         }
         case Event::GameFull:
         {
             sf::Uint16 gameId = 0;
             if(!(packet >> gameId)) return false;
-            Event e;
             e.gameFull = {
                 .gameId = gameId,
             };
-            e.type = Event::GameFull;
-            mEventQueue.push(e);
-            return true;
+            break;
         }
         case Event::Move:
         {
@@ -293,17 +293,45 @@ bool NetworkManager::waitEvent()
             sf::Vector2f target;
             sf::Vector2f pos;
             if(!(packet >> gameId >> charId >> target >> pos)) return false;
-            Event e;
             e.move = {
                 .gameId = gameId,
                 .charId = charId,
                 .target = target,
                 .pos = pos
             };
-            e.type = Event::Move;
-            mEventQueue.push(e);
-            return true;
+            break;
+        }
+        case Event::Damage:
+        {
+            sf::Uint16 gameId = 0;
+            sf::Uint8 charId = 0;
+            float hp = 0.0f;
+            if(!(packet >> gameId >> charId >> hp)) return false;
+            e.damage = {
+                .gameId = gameId,
+                .charId = charId,
+                .hp = hp
+            };
+            break;
+        }
+        case Event::AutoAttack:
+        {
+            sf::Uint16 gameId = 0;
+            sf::Uint8 charId = 0;
+            sf::Uint8 targetId = 0;
+            bool cancel = false;
+            if(!(packet >> gameId >> charId >> targetId >> cancel)) return false;
+            e.autoAttack = {
+                .gameId = gameId,
+                .charId = charId,
+                .targetId = targetId,
+                .cancel = cancel
+            };
+            break;
         }
         default: return false;
     }
+    e.type = type;
+    mEventQueue.push(e);
+    return true;
 }

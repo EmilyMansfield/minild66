@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <SFML/System.hpp>
-#include <iostream>
+#include <vector>
 #include <cstdlib>
 
 #include "game_map.hpp"

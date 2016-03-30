@@ -288,7 +288,26 @@ int main(int argc, char* argv[])
                         servout << ck << " sent a move event" << std::endl;
                         break;
                     }
-
+                    ///////////////////////////////////////////////////
+                    // DAMAGE
+                    ///////////////////////////////////////////////////
+                    // TODO
+                    case NetworkManager::Event::Damage:
+                    {
+                        auto& e = netEvent.move;
+                        auto ck = clientKey(e.gameId, e.charId);
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // AUTO ATTACK
+                    ///////////////////////////////////////////////////
+                    // TODO
+                    case NetworkManager::Event::AutoAttack:
+                    {
+                        auto& e = netEvent.autoAttack;
+                        auto ck = clientKey(e.gameId, e.charId);
+                        break;
+                    }
                 }
             }
             for(auto& g : games)
