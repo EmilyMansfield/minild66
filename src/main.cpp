@@ -157,15 +157,27 @@ int main(int argc, char* argv[])
                                 for(auto c : connectedClients)
                                 {
                                     if(c.second.gameId != connectedClients[ck].gameId || c.first == ck) continue;
+                                    // Shorthand reference to character
+                                    auto ch = games[e.gameId].characters[c.second.charId];
                                     NetworkManager::Event response;
+                                    // Connection information
                                     response.connect = {
                                         .ip = sf::IpAddress(0, 0, 0, 0),
                                         .port = 0,
                                         .gameId = c.second.gameId,
                                         .charId = c.second.charId,
-                                        .team = games[e.gameId].characters[c.second.charId].team
+                                        .team = ch.team
                                     };
                                     response.type = NetworkManager::Event::Connect;
+                                    networkManager.send(response, e.ip, e.port);
+                                    // Position information
+                                    response.move = {
+                                        .gameId = c.second.gameId,
+                                        .charId = c.second.charId,
+                                        .target = ch.c.pfHelper.target,
+                                        .pos = ch.c.pfHelper.pos
+                                    };
+                                    response.type = NetworkManager::Event::Move;
                                     networkManager.send(response, e.ip, e.port);
                                 }
                                 // Send to other clients who are in the same game
