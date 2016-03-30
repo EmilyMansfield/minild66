@@ -91,8 +91,13 @@ int main(int argc, char* argv[])
         // Games currently running on this server
         std::map<sf::Uint16, GameContainer> games;
 
+        // Game time
+        sf::Clock clock;
+
         while(running)
         {
+            float dt = clock.restart().asSeconds();
+
             NetworkManager::Event netEvent;
             while(networkManager.pollEvent(netEvent))
             {
@@ -122,7 +127,7 @@ int main(int argc, char* argv[])
                             // If the game doesn't exist yet, make it
                             if(games.count(e.gameId) == 0)
                             {
-                                games[e.gameId] = GameContainer(entityManager.getEntity<GameMap>("gamemap_large"), e.gameId, 255);
+                                games[e.gameId] = GameContainer(entityManager.getEntity<GameMap>("gamemap_5v5"), e.gameId, 255);
                             }
                             GameContainer& game = games[e.gameId];
                             // Attempt to add to a team
@@ -237,7 +242,46 @@ int main(int argc, char* argv[])
 
                         break;
                     }
+                    ///////////////////////////////////////////////////
+                    // MOVE
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::Move:
+                    {
+                        auto& e = netEvent.move;
+                        auto ck = clientKey(e.gameId, e.charId);
+
+                        auto& ch = games[e.gameId].characters[e.charId].c;
+                        // If the client position is slightly different to
+                        // server position, accept the client as truth
+                        // If it's wildly different, accept the server
+                        bool changeClient = false;
+                        if(vecmath::norm(ch.pfHelper.pos-e.pos) < 0.1) ch.pfHelper.pos = e.pos;
+                        else
+                        {
+                            changeClient = true;
+                            e.pos = ch.pfHelper.pos;
+                        }
+                        // Change the target
+                        ch.pfHelper.setTarget(e.target);
+
+                        // Now that corrections have been made, broadcast
+                        // to all clients in the game, but only broadcast
+                        // to the sender if they had their position changed
+                        for(auto c : connectedClients)
+                        {
+                            if(c.second.gameId != e.gameId ||
+                                (changeClient == false && c.first == ck)) continue;
+                            networkManager.send(netEvent, c.second.ip, c.second.port);
+                        }
+                        servout << ck << " sent a move event" << std::endl;
+                        break;
+                    }
+
                 }
+            }
+            for(auto& g : games)
+            {
+                g.second.update(dt);
             }
         }
     }
@@ -329,13 +373,13 @@ int main(int argc, char* argv[])
                             clntout << "\tAdded to team " << static_cast<int>(e.team) << std::endl;
                             // Make a new GameContainer
                             game = std::shared_ptr<GameContainer>(new GameContainer(
-                                    entityManager.getEntity<GameMap>("gamemap_large"),
+                                    entityManager.getEntity<GameMap>("gamemap_5v5"),
                                     e.gameId, e.charId));
                             // Add the client to the game, with the
                             // position and team as given by the server
                             game->add("character_fighter", e.team, &entityManager, &e.charId);
                             // TODO: Add other players
-                            state.reset(new GameStateGame(state, state, game, &entityManager));
+                            state.reset(new GameStateGame(state, state, game, &entityManager, &networkManager));
                         }
                         // Otherwise if this concerns the game the client
                         // is connected to
@@ -364,6 +408,19 @@ int main(int argc, char* argv[])
                         auto e = netEvent.gameFull;
                         clntout << e.gameId << " is full, sorry" << std::endl;
                         window.close();
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // MOVE
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::Move:
+                    {
+                        auto e = netEvent.move;
+                        if(game == nullptr || e.gameId != game->gameId) break;
+                        // Accept position and target changes from the server
+                        auto& ch = game->characters[e.charId].c;
+                        ch.pfHelper.pos = e.pos;
+                        ch.pfHelper.setTarget(e.target);
                         break;
                     }
                 }

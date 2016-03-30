@@ -159,9 +159,20 @@ sf::Socket::Status NetworkManager::send(const Event& event,
         case Event::GameFull:
             packet << event.gameFull.gameId;
             break;
+        case Event::Move:
+            packet << event.move.gameId
+                   << event.move.charId
+                   << event.move.target
+                   << event.move.pos;
+            break;
         default: return sf::Socket::Error;
     }
     return mSocket.send(packet, remoteAddress, remotePort);
+}
+
+sf::Socket::Status NetworkManager::send(const Event& event)
+{
+    return send(event, mRemoteIp, mRemotePort);
 }
 
 // Take the next event out of the event queue
@@ -272,6 +283,24 @@ bool NetworkManager::waitEvent()
                 .gameId = gameId,
             };
             e.type = Event::GameFull;
+            mEventQueue.push(e);
+            return true;
+        }
+        case Event::Move:
+        {
+            sf::Uint16 gameId = 0;
+            sf::Uint8 charId = 0;
+            sf::Vector2f target;
+            sf::Vector2f pos;
+            if(!(packet >> gameId >> charId >> target >> pos)) return false;
+            Event e;
+            e.move = {
+                .gameId = gameId,
+                .charId = charId,
+                .target = target,
+                .pos = pos
+            };
+            e.type = Event::Move;
             mEventQueue.push(e);
             return true;
         }

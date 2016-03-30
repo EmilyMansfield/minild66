@@ -12,6 +12,7 @@
 #include "character.hpp"
 #include "pathfinding_helper.hpp"
 #include "game_container.hpp"
+#include "network_manager.hpp"
 
 class GameStateGame : public GameState
 {
@@ -19,6 +20,7 @@ private:
     sf::View view;
     std::shared_ptr<GameContainer> game;
     GameContainer::CharWrapper* client;
+    NetworkManager* nmgr;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
@@ -26,8 +28,9 @@ public:
     GameStateGame(std::shared_ptr<GameState>& state,
             std::shared_ptr<GameState>& prevState,
             std::shared_ptr<GameContainer> game,
-            EntityManager* mgr) :
-        GameState(state, prevState, mgr), game(game)
+            EntityManager* mgr,
+            NetworkManager* nmgr) :
+        GameState(state, prevState, mgr), game(game), nmgr(nmgr)
     {
         view = sf::View(sf::FloatRect(0, 0,
             ld::widthTiles * game->map->tilemap.ts,

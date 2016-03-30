@@ -59,7 +59,10 @@ public:
         };
         struct MoveEvent
         {
+            sf::Uint16 gameId;
+            sf::Uint8 charId;
             sf::Vector2f target;
+            sf::Vector2f pos;
         };
         enum EventType {
             Nop,        // No request
@@ -76,6 +79,7 @@ public:
             ConnectEvent        connect;
             DisconnectEvent     disconnect;
             GameFullEvent       gameFull;
+            MoveEvent           move;
         };
 
         Event() {}
@@ -107,6 +111,7 @@ public:
     sf::Socket::Status send(const Event& event,
         const sf::IpAddress& remoteAddress,
         unsigned short remotePort);
+    sf::Socket::Status send(const Event& event);
 
     // Take the next event out of the event queue
     bool pollEvent(Event& event);
@@ -116,5 +121,17 @@ public:
     bool waitEvent();
 
 };
+
+// Overload packet operators for common structures
+template<typename T>
+sf::Packet& operator<<(sf::Packet& packet, const sf::Vector2<T>& v)
+{
+    return packet << v.x << v.y;
+}
+template<typename T>
+sf::Packet& operator>>(sf::Packet& packet, sf::Vector2<T>& v)
+{
+    return packet >> v.x >> v.y;
+}
 
 #endif /* NETWORK_MANAGER_HPP */

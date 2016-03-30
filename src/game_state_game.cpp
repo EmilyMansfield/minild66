@@ -40,10 +40,20 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
     if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
     {
         // Set the pathfinding target
-        client->c.pfHelper.setTarget(
-            window.mapPixelToCoords(sf::Vector2i(
-                event.mouseButton.x,
-                event.mouseButton.y)) / (float)game->map->tilemap.ts);
+        sf::Vector2f target = window.mapPixelToCoords(sf::Vector2i(
+            event.mouseButton.x,
+            event.mouseButton.y)) / (float)game->map->tilemap.ts;
+        client->c.pfHelper.setTarget(target);
+        // Send to server
+        NetworkManager::Event e;
+        e.type = NetworkManager::Event::Move;
+        e.move = {
+            .gameId = game->gameId,
+            .charId = game->client,
+            .target = target,
+            .pos = client->c.pfHelper.pos
+        };
+        nmgr->send(e);
     }
 }
 
@@ -93,9 +103,6 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 
 void GameStateGame::update(float dt)
 {
-    for(auto& ch : game->characters)
-    {
-        ch.second.c.update(dt);
-    }
+    game->update(dt);
 }
 
