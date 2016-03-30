@@ -14,6 +14,8 @@ public:
     Tileset* tileset;
     Tilemap tilemap;
     Graph<sf::Vector2u> graph;
+    std::vector<sf::Vector2f> team1Spawns;
+    std::vector<sf::Vector2f> team2Spawns;
 
     GameMap(const std::string& id, const JsonBox::Value& v, EntityManager* mgr);
 
