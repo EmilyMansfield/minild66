@@ -103,6 +103,17 @@ void GameStateGame::handleInput(float dt, const sf::RenderWindow& window)
 
 void GameStateGame::update(float dt)
 {
+    for(const auto& ch : game->characters)
+    {
+        if(characterBars.count(ch.first) == 0)
+        {
+            characterBars[ch.first] = gui::Bar(mMgr->getEntity<Tileset>("tileset_gui"), gui::Color::Red, 0.5f);
+            characterBars[ch.first].setFillRatio(ch.second.c.hp / ch.second.c.hp_max);
+        }
+        characterBars[ch.first].setPosition(ch.second.c.getPos() - sf::Vector2f(
+            characterBars[ch.first].getWidth() / 2.0f,
+            game->map->tileset->tilesize));
+    }
     game->update(dt);
 }
 

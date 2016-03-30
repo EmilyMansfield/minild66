@@ -29,7 +29,7 @@ typedef struct
 
 class Creature : public Entity, public sf::Drawable
 {
-protected:
+public:
     // Health
     float hp;
     float hp_max;
@@ -49,6 +49,7 @@ protected:
     float pa;
     float sa;
 
+protected:
     // TODO: Add these to a component instead of just hacking them in?
     sf::Vector2f mPos;
     sf::Vector2f mVel;
@@ -99,8 +100,8 @@ public:
         mSprite.setPosition(mPos);
     }
 
-    virtual sf::Vector2f getPos() { return mPos; }
-    virtual float getMoveSpeed() { return moveSpeed; }
+    virtual sf::Vector2f getPos() const { return mPos; }
+    virtual float getMoveSpeed() const { return moveSpeed; }
 };
 
 #endif /* CREATURE_HPP */

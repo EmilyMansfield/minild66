@@ -10,10 +10,10 @@ void Creature::load(const JsonBox::Value& v, EntityManager* mgr)
 
     // Load main properties
     if(has("hp_max")) hp_max = o["hp_max"].tryGetFloat(0.0f);
-    if(has("hp")) hp = o["hp"].tryGetFloat(hp_max);
+    hp = has("hp") ? o["hp"].tryGetFloat(hp_max) : hp_max;
     if(has("hp_regen")) hp_regen = o["hp_regen"].tryGetFloat(0.0f);
     if(has("mp_max")) mp_max = o["mp_max"].tryGetFloat(0.0f);
-    if(has("mp")) mp = o["mp"].tryGetFloat(mp_max);
+    mp = has("mp") ? o["mp"].tryGetFloat(mp_max) : mp_max;
     if(has("mp_regen")) mp_regen = o["mp_regen"].tryGetFloat(0.0f);
     if(has("moveSpeed")) moveSpeed = o["moveSpeed"].tryGetFloat(0.0f);
     if(has("pd")) pd = o["pd"].tryGetFloat(0.0f);

@@ -10,5 +10,10 @@
         "animations": [
             { "name": "character_fighter_idle", "x": 0, "y": 0, "len": 4, "duration": 1.0 }
         ]
+    },
+
+    "tileset_gui": {
+        "filename": "assets/gui.png",
+        "tilesize": 16
     }
 }

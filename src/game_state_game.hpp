@@ -13,6 +13,7 @@
 #include "pathfinding_helper.hpp"
 #include "game_container.hpp"
 #include "network_manager.hpp"
+#include "gui.hpp"
 
 class GameStateGame : public GameState
 {
@@ -21,6 +22,7 @@ private:
     std::shared_ptr<GameContainer> game;
     GameContainer::CharWrapper* client;
     NetworkManager* nmgr;
+    std::map<sf::Uint8, gui::Bar> characterBars;
 
     void pan(const sf::Vector2f& dir, float dt, const sf::RenderWindow& window);
 
@@ -41,6 +43,16 @@ public:
 
         // Centre the view on the client
         view.setCenter((float)game->map->tilemap.ts * client->c.pfHelper.pos);
+
+        // Add health bars for each client
+        for(const auto& ch : game->characters)
+        {
+            characterBars[ch.first] = gui::Bar(mMgr->getEntity<Tileset>("tileset_gui"), gui::Color::Red, 0.5f);
+            characterBars[ch.first].setFillRatio((float)ch.second.c.hp / (float)ch.second.c.hp_max);
+            characterBars[ch.first].setPosition(ch.second.c.getPos() - sf::Vector2f(
+                characterBars[ch.first].getWidth() / 2.0f,
+                game->map->tileset->tilesize));
+        }
     }
 
     virtual void handleEvent(const sf::Event& event,
@@ -53,9 +65,10 @@ public:
         target.clear(sf::Color::Green);
         target.setView(view);
         target.draw(game->map->tilemap, states);
-        for(auto& ch : game->characters)
+        for(const auto& ch : game->characters)
         {
-            target.draw(ch.second.c);
+            target.draw(ch.second.c, states);
+            target.draw(characterBars.at(ch.first), states);
         }
     }
 };
