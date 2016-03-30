@@ -3,7 +3,7 @@
 		"port": 49518
 	},
 	"client": {
-		"port": 49519,
+		"port": 0,
 		"target": {
 			"address": "192.168.0.43",
 			"port": 49518,

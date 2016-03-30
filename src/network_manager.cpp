@@ -27,8 +27,9 @@ NetworkManager::NetworkManager(const JsonBox::Value& v)
         throw std::runtime_error("Failed to open socket on port "
             + std::to_string(mPort));
     }
-    if(ld::isServer) servout << "Bound to port " << mSocket.getLocalPort() << std::endl;
-    else             clntout << "Bound to port " << mSocket.getLocalPort() << std::endl;
+    mPort = mSocket.getLocalPort();
+    if(ld::isServer) servout << "Bound to port " << mPort << std::endl;
+    else             clntout << "Bound to port " << mPort << std::endl;
 }
 
 NetworkManager::NetworkManager() : mPort(49518), mRemotePort(0) {}
