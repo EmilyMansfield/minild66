@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
                             // Attempt to add to a team
                             // TODO: Add team choosing
                             sf::Uint8 charId = 255;
-                            if(game.add("character_fighter", GameContainer::Team::Any, &entityManager, charId))
+                            if(game.add("character_fighter", GameContainer::Team::Any, &entityManager, &charId))
                             {
                                 // Added to the team, send a success
                                 // message to connected clients
@@ -287,7 +287,8 @@ int main(int argc, char* argv[])
                     case NetworkManager::Event::Connect:
                     {
                         auto e = netEvent.connect;
-                        clntout << "A client has connected" << std::endl;
+                        clntout << "A client has connected to game " << e.gameId
+                                << " as character " << e.charId << std::endl;
                         // If client has not yet connected and this is addressed
                         // to the client
                         if(!hasConnectedToServer && e.ip == networkManager.getIp())
@@ -301,7 +302,7 @@ int main(int argc, char* argv[])
                                     e.gameId, e.charId));
                             // Add the client to the game, with the
                             // position and team as given by the server
-                            game->add("character_fighter", e.team, &entityManager, e.charId);
+                            game->add("character_fighter", e.team, &entityManager, &e.charId);
                             // TODO: Add other players
                             state.reset(new GameStateGame(state, state, game, &entityManager));
                         }
@@ -311,7 +312,7 @@ int main(int argc, char* argv[])
                         {
                             // Server says a new player has joined the game
                             clntout << "\tConnected to my game on team " << static_cast<int>(e.team) << std::endl;
-                            game->add("character_fighter", e.team, &entityManager, e.charId);
+                            game->add("character_fighter", e.team, &entityManager, &e.charId);
                         }
                         break;
                     }

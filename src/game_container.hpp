@@ -76,7 +76,7 @@ public:
     // Automatically allocate to the team with the fewest players if
     // team is set to Any. charId should be set to 255 on the server,
     // otherwise it should be set to what the server told us
-    bool add(const std::string& characterId, Team team, EntityManager* mgr, sf::Uint8& charId)
+    bool add(const std::string& characterId, Team team, EntityManager* mgr, sf::Uint8* charId)
     {
         Team assignedTeam = Team::None;
 
@@ -106,8 +106,8 @@ public:
         if(assignedTeam == Team::None) return false;
 
         // If on the server, add to the next available slot
-        if(charId == 255 || characters.count(charId) > 0)
-            charId = characters.size();
+        if(*charId == 255 || characters.count(*charId) > 0)
+            *charId = characters.size();
 
         CharWrapper character(characterId, assignedTeam, mgr);
         // Calculate their starting position
@@ -117,7 +117,7 @@ public:
             map->tilemap.h * (0.1f + 0.8f * (float)(rand()) / RAND_MAX));
         character.c.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
         character.c.setPos(startPos);
-        characters[charId] = character;
+        characters[*charId] = character;
 
         return true;
     }
