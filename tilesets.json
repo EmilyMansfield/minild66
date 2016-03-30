@@ -8,7 +8,15 @@
         "filename": "assets/characters.png",
         "tilesize": 16,
         "animations": [
-            { "name": "character_fighter_idle", "x": 0, "y": 0, "len": 4, "duration": 1.0 }
+            { "name": "character_fighter_idle_n", "x": 0, "y": 0, "len": 1, "duration": 1.0 },
+            { "name": "character_fighter_idle_e", "x": 1, "y": 0, "len": 1, "duration": 1.0 },
+            { "name": "character_fighter_idle_s", "x": 2, "y": 0, "len": 1, "duration": 1.0 },
+            { "name": "character_fighter_idle_w", "x": 3, "y": 0, "len": 1, "duration": 1.0 },
+            { "name": "character_fighter_walk_n", "x": 0, "y": 1, "len": 2, "duration": 1.0 },
+            { "name": "character_fighter_walk_e", "x": 2, "y": 1, "len": 2, "duration": 1.0 },
+            { "name": "character_fighter_walk_s", "x": 4, "y": 1, "len": 2, "duration": 1.0 },
+            { "name": "character_fighter_walk_w", "x": 6, "y": 1, "len": 2, "duration": 1.0 },
+            { "name": "weapon_fighter_attack", "x": 0, "y": 3, "len": 3, "duration": 0.5 }
         ]
     },
 
