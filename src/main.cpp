@@ -9,6 +9,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <JsonBox.h>
+#include <algorithm>
 
 #include "constants.hpp"
 #include "game_state.hpp"
@@ -33,6 +34,15 @@ void pollNetworkEvents(NetworkManager* nmgr, bool* kill)
     {
         nmgr->waitEvent();
     }
+}
+
+// Get the key for connected clients from a client charId and gameId
+// These are used in NetEvents to uniquely identify each client so as
+// to not broadcast ip and port to other clients. It also allows
+// multiple connections from the same ip
+sf::Uint32 clientKey(const sf::Uint16 gameId, const sf::Uint8 charId)
+{
+    return sf::Uint32(gameId << 8) + sf::Uint32(charId);
 }
 
 int main(int argc, char* argv[])
@@ -69,22 +79,15 @@ int main(int argc, char* argv[])
     if(ld::isServer)
     {
         bool running = true;
-        // Currently connected clients
-        // TODO: Identifying by IP is not a safe way to do this, time of
-        // connection may be better; they are guaranteed to be unique
-        // among all clients since the server receives events
-        // serially and not concurrently.
-        auto ipCmp = [](const sf::IpAddress& a, const sf::IpAddress& b)
-        {
-            return a.toInteger() < b.toInteger();
-        };
+        // Currently connected clients. Indexed by a hash of their
+        // gameId and charId (see clientKey)
         struct ClientInfo {
             sf::IpAddress ip;
             sf::Uint16 port;
             sf::Uint16 gameId;
             sf::Uint8 charId;
         };
-        std::map<sf::IpAddress, ClientInfo, decltype(ipCmp)> connectedClients(ipCmp);
+        std::map<sf::Uint32, ClientInfo> connectedClients;
         // Games currently running on this server
         std::map<sf::Uint16, GameContainer> games;
 
@@ -106,16 +109,21 @@ int main(int argc, char* argv[])
                     case NetworkManager::Event::Connect:
                     {
                         auto& e = netEvent.connect;
-                        if(connectedClients.count(e.ip) > 0)
+                        auto ck = clientKey(e.gameId, e.charId);
+                        if(std::find_if(connectedClients.begin(), connectedClients.end(),
+                            [&e](const std::pair<sf::Uint32, ClientInfo>& a)
+                            {
+                                return a.second.ip == e.ip && a.second.port == e.port;
+                            }) != connectedClients.end())
                         {
-                            servout << e.ip.toString() << " is already connected" << std::endl;
+                            servout << e.ip.toString() << ":" << e.port << " is already connected" << std::endl;
                         }
                         else
                         {
                             // If the game doesn't exist yet, make it
                             if(games.count(e.gameId) == 0)
                             {
-                                games[e.gameId] = GameContainer();
+                                games[e.gameId] = GameContainer(entityManager.getEntity<GameMap>("gamemap_large"), e.gameId, 255);
                             }
                             GameContainer& game = games[e.gameId];
                             // Attempt to add to a team
@@ -125,10 +133,10 @@ int main(int argc, char* argv[])
                             {
                                 // Added to the team, send a success
                                 // message to connected clients
-                                servout << e.ip.toString() << " has connected to game "
+                                servout << e.ip.toString() << ":" << e.port << " has connected to game "
                                     << e.gameId << std::endl;
                                 // Add to the list of connected clients
-                                connectedClients[e.ip] = (ClientInfo){
+                                connectedClients[ck] = (ClientInfo){
                                     .ip = e.ip,
                                     .port = e.port,
                                     .gameId = e.gameId,
@@ -138,7 +146,6 @@ int main(int argc, char* argv[])
                                 // to connect
                                 e.team = game.characters[charId].team;
                                 networkManager.send(netEvent, e.ip, e.port);
-                                sf::IpAddress clientIp = e.ip;
                                 // Send to other clients who are in the same game
                                 // Ip and port are not needed by other
                                 // clients, and so are masked
@@ -148,7 +155,7 @@ int main(int argc, char* argv[])
                                 {
                                     // Don't send it to client who requested
                                     // or clients who are not in the same game
-                                    if(c.second.gameId != e.gameId || c.first == clientIp) continue;
+                                    if(c.second.gameId != connectedClients[ck].gameId || c.first == ck) continue;
                                     networkManager.send(netEvent, c.second.ip, c.second.port);
                                 }
                             }
@@ -183,17 +190,23 @@ int main(int argc, char* argv[])
                         }
                         // Same as a connect event but in reverse
                         auto& e = netEvent.disconnect;
-                        if(connectedClients.count(e.ip) == 0)
+                        auto ck = clientKey(e.gameId, e.charId);
+                        if(connectedClients.count(ck) == 0)
                         {
                             servout << e.ip.toString() << " is not connected" << std::endl;
                         }
                         // TODO: This section should also be triggered if a client has not been
                         // heard from for a certain amount of time
-                        else if(connectedClients[e.ip].gameId == e.gameId && connectedClients[e.ip].charId == e.charId)
+                        // Double check that the information given by the
+                        // client is correct
+                        else if(connectedClients[ck].gameId == e.gameId &&
+                            connectedClients[ck].charId == e.charId &&
+                            connectedClients[ck].ip == e.ip &&
+                            connectedClients[ck].port == e.port)
                         {
                             servout << e.ip.toString() << " has disconnected" << std::endl;
                             // Delete from the set of connected clients
-                            connectedClients.erase(e.ip);
+                            connectedClients.erase(ck);
                             // Broacast
                             e.ip = sf::IpAddress(0, 0, 0, 0);
                             e.port = 0;
@@ -308,7 +321,7 @@ int main(int argc, char* argv[])
                         }
                         // Otherwise if this concerns the game the client
                         // is connected to
-                        else if(e.gameId == game->gameId && e.charId != game->client)
+                        else if(hasConnectedToServer && e.gameId == game->gameId)
                         {
                             // Server says a new player has joined the game
                             clntout << "\tConnected to my game on team " << static_cast<int>(e.team) << std::endl;

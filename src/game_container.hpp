@@ -113,8 +113,8 @@ public:
         // Calculate their starting position
         // TODO: Do this with proper spawns
         sf::Vector2f startPos(
-            map->tilemap.w * (0.1f + 0.8f * (float)(rand()) / RAND_MAX),
-            map->tilemap.h * (0.1f + 0.8f * (float)(rand()) / RAND_MAX));
+            map->tilemap.w * (0.1f + 0.8f * (float)(std::rand()) / RAND_MAX),
+            map->tilemap.h * (0.1f + 0.8f * (float)(std::rand()) / RAND_MAX));
         character.c.pfHelper = PathfindingHelper(startPos, startPos, &map->graph);
         character.c.setPos(startPos);
         characters[*charId] = character;
