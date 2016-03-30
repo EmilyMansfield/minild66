@@ -105,11 +105,17 @@ void GameStateGame::update(float dt)
 {
     for(const auto& ch : game->characters)
     {
+        // Add a health bar is character doesn't have one
         if(characterBars.count(ch.first) == 0)
-        {
-            characterBars[ch.first] = gui::Bar(mMgr->getEntity<Tileset>("tileset_gui"), gui::Color::Red, 0.5f);
-            characterBars[ch.first].setFillRatio(ch.second.c.hp / ch.second.c.hp_max);
+        {   
+            gui::Color barCol;
+            if(ch.second.team != client->team) barCol = gui::Color::Red;
+            else if(ch.first == game->client) barCol = gui::Color::Green;
+            else barCol = gui::Color::Blue;
+            characterBars[ch.first] = gui::Bar(mMgr->getEntity<Tileset>("tileset_gui"), barCol, 0.5f);
+            characterBars[ch.first].setFillRatio((float)ch.second.c.hp / (float)ch.second.c.hp_max);
         }
+        // Set health bar position
         characterBars[ch.first].setPosition(ch.second.c.getPos() - sf::Vector2f(
             characterBars[ch.first].getWidth() / 2.0f,
             game->map->tileset->tilesize));

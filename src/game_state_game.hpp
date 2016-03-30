@@ -43,16 +43,6 @@ public:
 
         // Centre the view on the client
         view.setCenter((float)game->map->tilemap.ts * client->c.pfHelper.pos);
-
-        // Add health bars for each client
-        for(const auto& ch : game->characters)
-        {
-            characterBars[ch.first] = gui::Bar(mMgr->getEntity<Tileset>("tileset_gui"), gui::Color::Red, 0.5f);
-            characterBars[ch.first].setFillRatio((float)ch.second.c.hp / (float)ch.second.c.hp_max);
-            characterBars[ch.first].setPosition(ch.second.c.getPos() - sf::Vector2f(
-                characterBars[ch.first].getWidth() / 2.0f,
-                game->map->tileset->tilesize));
-        }
     }
 
     virtual void handleEvent(const sf::Event& event,
