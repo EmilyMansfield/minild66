@@ -138,6 +138,7 @@ int main(int argc, char* argv[])
                                 // to connect
                                 e.team = game.characters[charId].team;
                                 networkManager.send(netEvent, e.ip, e.port);
+                                sf::IpAddress clientIp = e.ip;
                                 // Send to other clients who are in the same game
                                 // Ip and port are not needed by other
                                 // clients, and so are masked
@@ -145,7 +146,9 @@ int main(int argc, char* argv[])
                                 e.port = 0;
                                 for(auto c : connectedClients)
                                 {
-                                    if(c.second.gameId != e.gameId) continue;
+                                    // Don't send it to client who requested
+                                    // or clients who are not in the same game
+                                    if(c.second.gameId != e.gameId || c.first == clientIp) continue;
                                     networkManager.send(netEvent, c.second.ip, c.second.port);
                                 }
                             }
@@ -304,7 +307,7 @@ int main(int argc, char* argv[])
                         }
                         // Otherwise if this concerns the game the client
                         // is connected to
-                        else if(e.gameId == game->gameId)
+                        else if(e.gameId == game->gameId && e.charId != game->client)
                         {
                             // Server says a new player has joined the game
                             clntout << "\tConnected to my game on team " << static_cast<int>(e.team) << std::endl;

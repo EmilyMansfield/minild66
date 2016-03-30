@@ -103,6 +103,8 @@ bool NetworkManager::disconnectFromServer(sf::Uint16 gameId, sf::Uint8 charId)
 
     Event e;
     e.disconnect = {
+        .ip = mIp,
+        .port = mPort,
         .gameId = gameId,
         .charId = charId
     };
