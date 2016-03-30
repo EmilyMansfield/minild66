@@ -147,6 +147,22 @@ int main(int argc, char* argv[])
                                 e.team = game.characters[charId].team;
                                 e.charId = charId;
                                 networkManager.send(netEvent, e.ip, e.port);
+                                // Tell the connecting client about existing
+                                // clients in the same game
+                                for(auto c : connectedClients)
+                                {
+                                    if(c.second.gameId != connectedClients[ck].gameId || c.first == ck) continue;
+                                    NetworkManager::Event response;
+                                    response.connect = {
+                                        .ip = sf::IpAddress(0, 0, 0, 0),
+                                        .port = 0,
+                                        .gameId = c.second.gameId,
+                                        .charId = c.second.charId,
+                                        .team = games[e.gameId].characters[c.second.charId].team
+                                    };
+                                    response.type = NetworkManager::Event::Connect;
+                                    networkManager.send(response, e.ip, e.port);
+                                }
                                 // Send to other clients who are in the same game
                                 // Ip and port are not needed by other
                                 // clients, and so are masked
