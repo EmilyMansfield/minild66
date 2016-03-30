@@ -109,7 +109,6 @@ int main(int argc, char* argv[])
                     case NetworkManager::Event::Connect:
                     {
                         auto& e = netEvent.connect;
-                        auto ck = clientKey(e.gameId, e.charId);
                         if(std::find_if(connectedClients.begin(), connectedClients.end(),
                             [&e](const std::pair<sf::Uint32, ClientInfo>& a)
                             {
@@ -131,10 +130,11 @@ int main(int argc, char* argv[])
                             sf::Uint8 charId = 255;
                             if(game.add("character_fighter", GameContainer::Team::Any, &entityManager, &charId))
                             {
+                                auto ck = clientKey(e.gameId, charId);
                                 // Added to the team, send a success
                                 // message to connected clients
                                 servout << e.ip.toString() << ":" << e.port << " has connected to game "
-                                    << e.gameId << std::endl;
+                                    << e.gameId << " as character " << (sf::Uint16)charId << std::endl;
                                 // Add to the list of connected clients
                                 connectedClients[ck] = (ClientInfo){
                                     .ip = e.ip,
@@ -145,6 +145,7 @@ int main(int argc, char* argv[])
                                 // Send an accept to the client who tried
                                 // to connect
                                 e.team = game.characters[charId].team;
+                                e.charId = charId;
                                 networkManager.send(netEvent, e.ip, e.port);
                                 // Send to other clients who are in the same game
                                 // Ip and port are not needed by other
@@ -157,6 +158,7 @@ int main(int argc, char* argv[])
                                     // or clients who are not in the same game
                                     if(c.second.gameId != connectedClients[ck].gameId || c.first == ck) continue;
                                     networkManager.send(netEvent, c.second.ip, c.second.port);
+                                    servout << "\tNotified " << c.second.ip.toString() << ":" << c.second.port << std::endl;
                                 }
                             }
                             else
@@ -301,7 +303,7 @@ int main(int argc, char* argv[])
                     {
                         auto e = netEvent.connect;
                         clntout << "A client has connected to game " << e.gameId
-                                << " as character " << e.charId << std::endl;
+                                << " as character " << (sf::Uint16)e.charId << std::endl;
                         // If client has not yet connected and this is addressed
                         // to the client
                         if(!hasConnectedToServer && e.ip == networkManager.getIp())
