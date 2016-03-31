@@ -21,6 +21,7 @@ private:
     sf::View view;
     std::shared_ptr<GameContainer> game;
     GameContainer::CharWrapper* client;
+    sf::Vector2f* pathfindPtr;
     NetworkManager* nmgr;
     std::map<sf::Uint8, gui::Bar> characterBars;
 
@@ -32,7 +33,10 @@ public:
             std::shared_ptr<GameContainer> game,
             EntityManager* mgr,
             NetworkManager* nmgr) :
-        GameState(state, prevState, mgr), game(game), nmgr(nmgr)
+        GameState(state, prevState, mgr),
+        game(game),
+        pathfindPtr(nullptr),
+        nmgr(nmgr)
     {
         view = sf::View(sf::FloatRect(0, 0,
             ld::widthTiles * game->map->tilemap.ts,

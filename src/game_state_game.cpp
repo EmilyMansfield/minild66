@@ -43,14 +43,41 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
         sf::Vector2f target = window.mapPixelToCoords(sf::Vector2i(
             event.mouseButton.x,
             event.mouseButton.y)) / (float)game->map->tilemap.ts;
-        client->c.pfHelper.setTarget(target);
+
+        // If this is suitably close to an enemy character, assume we're
+        // moving towards them
+        bool staticTarget = true;
+        for(const auto& ch : game->characters)
+        {
+            // Ignore clients on the same team (also ignores self)
+            if(ch.second.team == client->team) continue;
+            // Check click was close to them
+            if(vecmath::norm(target - ch.second.c.pfHelper.pos) < 0.4)
+            {
+                // Clicked on a client, so bind their position to be
+                // the position we're moving to, and start moving
+                // there
+                staticTarget = false;
+                pathfindPtr = &game->characters[ch.first].c.pfHelper.pos;
+                client->c.pfHelper.setTarget(*pathfindPtr);
+                break;
+            }
+        }
+        // Did not click on anyone, so null the pathfindPtr and
+        // proceed to the clicked position normally
+        if(staticTarget)
+        {
+            pathfindPtr = nullptr;
+            client->c.pfHelper.setTarget(target);
+        }
+
         // Send to server
         NetworkManager::Event e;
         e.type = NetworkManager::Event::Move;
         e.move = {
             .gameId = game->gameId,
             .charId = game->client,
-            .target = target,
+            .target = client->c.pfHelper.target,
             .pos = client->c.pfHelper.pos
         };
         nmgr->send(e);
@@ -120,6 +147,24 @@ void GameStateGame::update(float dt)
             characterBars[ch.first].getWidth() / 2.0f,
             game->map->tileset->tilesize));
     }
+
+    // If client is following someone, and they've moved away from the
+    // pfTarget, change their pfTarget to get them back on track
+    if(pathfindPtr != nullptr && vecmath::manhattan(*pathfindPtr-client->c.pfHelper.target) > 1.0f)
+    {
+        client->c.pfHelper.setTarget(*pathfindPtr);
+        // Server needs to know about the change too
+        NetworkManager::Event e;
+        e.type = NetworkManager::Event::Move;
+        e.move = {
+            .gameId = game->gameId,
+            .charId = game->client,
+            .target = client->c.pfHelper.target,
+            .pos = client->c.pfHelper.pos
+        };
+        nmgr->send(e);
+    }
+
     game->update(dt);
 }
 

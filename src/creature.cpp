@@ -39,7 +39,7 @@ void Creature::load(const JsonBox::Value& v, EntityManager* mgr)
         mTileset = mgr->getEntity<Tileset>(o["tileset"].tryGetString("nullid"));
         mTs = mTileset->tilesize;
         mSprite.setTexture(mTileset->tex);
-        mAnim = &mTileset->animations[id + "_idle"];
+        mAnim = &mTileset->animations[id + "_idle_n"];
         mSprite.setTextureRect(sf::IntRect(mAnim->x, mAnim->y, mTs, mTs));
         mAnimT = 0.0f;
         mAnimCurrentFrame = 0;

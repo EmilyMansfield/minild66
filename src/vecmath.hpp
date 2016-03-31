@@ -14,6 +14,12 @@ T norm(const sf::Vector2<T>& a)
     return std::sqrt(a.x*a.x + a.y*a.y);
 }
 
+template<typename T>
+T manhattan(const sf::Vector2<T>& a)
+{
+    return std::abs(a.x) + std::abs(a.y);
+}
+
 // TODO: Proper conversion operators
 template<typename T, typename S>
 sf::Vector2<T> to(const sf::Vector2<S>& a)
