@@ -54,33 +54,49 @@ void GameStateGame::handleEvent(const sf::Event& event, const sf::RenderWindow& 
             // Check click was close to them
             if(vecmath::norm(target - ch.second.c.pfHelper.pos) < 0.4)
             {
-                // Clicked on a client, so bind their position to be
-                // the position we're moving to, and start moving
-                // there
-                staticTarget = false;
-                pathfindPtr = &game->characters[ch.first].c.pfHelper.pos;
-                client->c.pfHelper.setTarget(*pathfindPtr);
-                break;
+                // If client is sufficiently close, then we're attacking
+                // TODO: Variable attack range
+                if(vecmath::norm(target - client->c.pfHelper.pos) < 1.0)
+                {
+                    // Send an autoattack event to the server
+                    NetworkManager::Event netEvent;
+                    netEvent.type = NetworkManager::Event::AutoAttack;
+                    netEvent.autoAttack = {
+                        .gameId = game->gameId,
+                        .charId = game->client,
+                        .targetId = ch.first,
+                        .cancel = false
+                    };
+                    nmgr->send(netEvent);
+                    nmgr->sendSelf(netEvent);
+                    return;
+                }
+                else
+                {
+                    // Clicked on a client, so bind their position to
+                    // the target
+                    staticTarget = false;
+                    pathfindPtr = &game->characters[ch.first].c.pfHelper.pos;
+                    target = *pathfindPtr;
+                    break;
+                }
             }
         }
         // Did not click on anyone, so null the pathfindPtr and
         // proceed to the clicked position normally
-        if(staticTarget)
-        {
-            pathfindPtr = nullptr;
-            client->c.pfHelper.setTarget(target);
-        }
+        if(staticTarget) pathfindPtr = nullptr;
 
         // Send to server
-        NetworkManager::Event e;
-        e.type = NetworkManager::Event::Move;
-        e.move = {
+        NetworkManager::Event netEvent;
+        netEvent.type = NetworkManager::Event::Move;
+        netEvent.move = {
             .gameId = game->gameId,
             .charId = game->client,
-            .target = client->c.pfHelper.target,
+            .target = target,
             .pos = client->c.pfHelper.pos
         };
-        nmgr->send(e);
+        nmgr->send(netEvent);
+        nmgr->sendSelf(netEvent);
     }
 }
 
@@ -152,17 +168,17 @@ void GameStateGame::update(float dt)
     // pfTarget, change their pfTarget to get them back on track
     if(pathfindPtr != nullptr && vecmath::manhattan(*pathfindPtr-client->c.pfHelper.target) > 1.0f)
     {
-        client->c.pfHelper.setTarget(*pathfindPtr);
         // Server needs to know about the change too
-        NetworkManager::Event e;
-        e.type = NetworkManager::Event::Move;
-        e.move = {
+        NetworkManager::Event netEvent;
+        netEvent.type = NetworkManager::Event::Move;
+        netEvent.move = {
             .gameId = game->gameId,
             .charId = game->client,
-            .target = client->c.pfHelper.target,
+            .target = *pathfindPtr,
             .pos = client->c.pfHelper.pos
         };
-        nmgr->send(e);
+        nmgr->send(netEvent);
+        nmgr->sendSelf(netEvent);
     }
 
     game->update(dt);

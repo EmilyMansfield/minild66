@@ -17,7 +17,7 @@
 // executed, applying the attack. The function should accept two
 // CharWrappers corresponding to the source and target, then create and
 // return a NetEvent which encapsulates the attack
-class TargetAttack
+class TargetAttack : public sf::Drawable
 {
 private:
 
@@ -33,8 +33,8 @@ private:
     bool mIsDone;
 
     std::function<NetworkManager::Event(
-        const GameContainer::CharWrapper&,
-        const GameContainer::CharWrapper&)> mFunc;
+        GameContainer::CharWrapper*,
+        GameContainer::CharWrapper*)> mFunc;
     GameContainer* mGame;
 
     sf::Sprite mSprite;
@@ -43,12 +43,15 @@ private:
 
 public:
 
-    TargetAttack(sf::Uint8 source, sf::Uint8 target, Tileset* tileset,
-        const std::string& animation, unsigned int triggerFrame,
-        std::function<NetworkManager::Event(
-            const GameContainer::CharWrapper&,
-            const GameContainer::CharWrapper&)> f,
-        GameContainer* game) :
+    TargetAttack(
+            sf::Uint8 source,
+            sf::Uint8 target,
+            Tileset* tileset,
+            const std::string& animation, unsigned int triggerFrame,
+            std::function<NetworkManager::Event(
+                GameContainer::CharWrapper*,
+                GameContainer::CharWrapper*)> f,
+            GameContainer* game) :
         mSource(source),
         mTarget(target),
         mTileset(tileset),
@@ -66,6 +69,8 @@ public:
         mSprite.setOrigin(mTs/2.0, mTs/2.0);
     }
 
+    // Returns true on the frame that the event is called
+    // Returns false otherwise. To check completion, use isDone
     bool update(float dt)
     {
         mAnimT += dt;
@@ -88,14 +93,30 @@ public:
         if(frame == mTriggerFrame)
         {
             // TODO: Trigger also if trigger frame is skipped
-            mNetEvent = mFunc(mGame->characters[mSource], mGame->characters[mTarget]);
+            mNetEvent = mFunc(&mGame->characters[mSource], &mGame->characters[mTarget]);
+            // Fill in the gameId and charId
+            switch(mNetEvent.type)
+            {
+                case NetworkManager::Event::Damage:
+                    mNetEvent.damage.gameId = mGame->gameId;
+                    mNetEvent.damage.charId = mTarget;
+                    break;
+                default:
+                    break;
+            }
+            return true;
         }
-        return mIsDone;
+        return false;
     }
 
     void setPos(const sf::Vector2f& pos) { mSprite.setPosition(pos); }
     bool isDone() const { return mIsDone; }
     NetworkManager::Event getEvent() const { return mNetEvent; }
+
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const
+    {
+        target.draw(mSprite, states);
+    }
 };
 
 #endif /* TARGET_ATTACK_HPP */

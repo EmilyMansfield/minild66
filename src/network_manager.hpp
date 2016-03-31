@@ -130,6 +130,7 @@ public:
         const sf::IpAddress& remoteAddress,
         unsigned short remotePort);
     sf::Socket::Status send(const Event& event);
+    sf::Socket::Status sendSelf(const Event& event);
 
     // Take the next event out of the event queue
     bool pollEvent(Event& event);

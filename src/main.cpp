@@ -312,6 +312,21 @@ int main(int argc, char* argv[])
             }
             for(auto& g : games)
             {
+                // Process parts of the game which result in events being sent
+                for(auto attack : g.second.targetAttacks)
+                {
+                    if(attack->update(dt))
+                    {
+                        // Attack has triggered, so tell the clients about it
+                        NetworkManager::Event netEvent = attack->getEvent();
+                        for(auto c : connectedClients)
+                        {
+                            if(c.second.gameId != g.first) continue;
+                            networkManager.send(netEvent, c.second.ip, c.second.port);
+                        }
+                    }
+                }
+                // Process the gameplay
                 g.second.update(dt);
             }
         }
@@ -452,6 +467,41 @@ int main(int argc, char* argv[])
                         auto& ch = game->characters[e.charId].c;
                         ch.pfHelper.pos = e.pos;
                         ch.pfHelper.setTarget(e.target);
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // DAMAGE
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::Damage:
+                    {
+                        break;
+                    }
+                    ///////////////////////////////////////////////////
+                    // AUTOATTACK
+                    ///////////////////////////////////////////////////
+                    case NetworkManager::Event::AutoAttack:
+                    {
+                        auto e = netEvent.autoAttack;
+                        if(game == nullptr || e.gameId != game->gameId) break;
+                        // This is bad. Hideously, grotesquely bad.
+                        // game->targetAttacks.push_back(new TargetAttack(
+                        //     e.charId, // Attacker
+                        //     e.targetId, // Target
+                        //     game->map->tileset, // Tileset of attack anim
+                        //     "weapon_fighter_attack", // Anim name
+                        //     2,  // Trigger at end of anim,
+                        //     [](GameContainer::CharWrapper* source, GameContainer::CharWrapper* target) {
+                        //         // Deal damage to the target
+                        //         return (NetworkManager::Event){
+                        //             .type = NetworkManager::Event::Damage,
+                        //             .damage = {
+                        //                 // TODO: Actually implement a proper damage function
+                        //                 .hp = target->c.hp - source->c.stats.str * 10
+                        //             }
+                        //         };
+                        //     },
+                        //     game // Pointer to game the clients are in
+                        // ));
                         break;
                     }
                 }

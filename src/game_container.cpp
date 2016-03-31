@@ -58,10 +58,6 @@ void GameContainer::update(float dt)
     {
         ch.second.c.update(dt);
     }
-    for(auto attack : targetAttacks)
-    {
-        attack->update(dt);
-    }
     // Shitty way of deleting finished events
     // No time or inclination right now for a proper solution
     for(int i = 0; i < targetAttacks.size(); ++i)

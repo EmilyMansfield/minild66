@@ -186,6 +186,13 @@ sf::Socket::Status NetworkManager::send(const Event& event)
     return send(event, mRemoteIp, mRemotePort);
 }
 
+sf::Socket::Status NetworkManager::sendSelf(const Event& event)
+{
+    // Could send this through localhost, but there's really no point
+    mEventQueue.push(event);
+    return sf::Socket::Done;
+}
+
 // Take the next event out of the event queue
 bool NetworkManager::pollEvent(Event& event)
 {

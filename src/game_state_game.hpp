@@ -14,6 +14,7 @@
 #include "game_container.hpp"
 #include "network_manager.hpp"
 #include "gui.hpp"
+#include "target_attack.hpp"
 
 class GameStateGame : public GameState
 {
@@ -63,6 +64,10 @@ public:
         {
             target.draw(ch.second.c, states);
             target.draw(characterBars.at(ch.first), states);
+        }
+        for(const auto& attack : game->targetAttacks)
+        {
+            target.draw(*attack, states);
         }
     }
 };
