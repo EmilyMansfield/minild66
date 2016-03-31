@@ -40,8 +40,15 @@ A MOBA is an RTS, right?
   - Game state wraps a Game Container, with the client controlling one character
     - TODO Still needs to be synced with other clients
 
-With only 3 days left it may look like there's a lot left to do (and frankly,
-there is), but at this point the rendering and network engine are mostly
-complete. What remains is to add gameplay and ensure that client/server sync
-correctly with correct packet-loss handling. Which doesn't quite sound like as
-much! Maybe I'll finish on time after all.
+###Day 5
+  - Server now identifies clients based on charId and gameID, so supports
+    multiple clients with the same IP address
+  - `config.json` accepts a default port of 0, which automatically allocates
+    a free port
+  - Synced movement of characters between clients (WOOO!)
+  - Made graphics a little bit nicer
+  - Added a percentage `Bar` class and used it to display a health overlay
+  - Started to add the ability to attack, it's a lot more complicated than
+    it seemed initially; attack anims must be synced between clients, but the
+    attack can be cancelled before it activates, so each attack requires up
+    to two different packets
