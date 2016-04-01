@@ -52,3 +52,12 @@ A MOBA is an RTS, right?
     it seemed initially; attack anims must be synced between clients, but the
     attack can be cancelled before it activates, so each attack requires up
     to two different packets
+
+###Day 6
+  - Clicking on an enemy causes you to follow them
+  - Client now processes its own events as if they came from someone else, making
+    code neater and reducing complexity
+
+With one day left it's pretty clear I'm not going to finish this, but I'll keep
+going to make it as complete as possible, and development isn't going to stop
+just because a week's up!
